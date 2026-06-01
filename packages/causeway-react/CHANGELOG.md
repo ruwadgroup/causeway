@@ -13,6 +13,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixed
 
 - Repack against `@causewayjs/client` 0.1.0-alpha.2.
+- Revalidate `useQuery` on mount by default without exposing stale cached data; opt into the old behavior with `keepPreviousData: true`.
 
 ## [0.2.6-alpha.0](https://github.com/tamimbinhakim/causeway/compare/dyadpy-react-v0.2.5-alpha.0...causeway-react-v0.2.6-alpha.0) (2026-05-30)
 

@@ -136,6 +136,7 @@ export interface CausewayClient {
 }
 
 export interface CallOptions {
+  cache?: "default" | "no-store";
   signal?: AbortSignal;
   headers?: Record<string, string>;
 }

@@ -63,3 +63,4 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixed
 
 - Omit `null` and `undefined` query parameter values in the route-key client.
+- Support `cache: "no-store"` call options so hook-driven refreshes can clear stale cached data before the network response returns.

@@ -213,12 +213,13 @@ export function createRouteKeyClient(config: ClientConfig): CausewayClient {
     }
 
     const previous = entries.get(key);
+    const keepPreviousData = opts.cache !== "no-store";
     entries.set(key, {
       routeKey,
       input: input ?? {},
       scope,
       state: {
-        data: previous?.state.data,
+        data: keepPreviousData ? previous?.state.data : undefined,
         error: null,
         pending: true,
         updatedAt: previous?.state.updatedAt,
@@ -243,7 +244,7 @@ export function createRouteKeyClient(config: ClientConfig): CausewayClient {
           input: input ?? {},
           scope,
           state: {
-            data: previous?.state.data,
+            data: keepPreviousData ? previous?.state.data : undefined,
             error,
             pending: false,
             updatedAt: previous?.state.updatedAt,

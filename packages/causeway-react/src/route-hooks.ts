@@ -4,6 +4,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -45,6 +46,7 @@ export interface CausewayProviderProps {
 
 export interface QueryHookOptions {
   enabled?: boolean;
+  keepPreviousData?: boolean;
   refetchOnMount?: boolean | "stale";
   staleTime?: number;
 }
@@ -96,6 +98,8 @@ interface HydratedQueryRecord {
 interface CausewayGlobal {
   [HYDRATED_QUERIES]?: HydratedQueryRecord[];
 }
+
+const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 export function CausewayProvider({
   client,
@@ -156,8 +160,23 @@ export function useQuery<TData = unknown, TError = unknown>(
     getSnapshot,
     getSnapshot,
   );
+  const mountedKeys = useRef(new Set<string>());
+  const hideDataKeys = useRef(new Set<string>());
+  const shouldRefreshOnMount =
+    options.enabled !== false &&
+    !mountedKeys.current.has(stableKey) &&
+    (options.refetchOnMount === undefined ||
+      options.refetchOnMount === true ||
+      (options.refetchOnMount === "stale" && isStale(state.updatedAt, options.staleTime)) ||
+      state.data === undefined);
+  const hideStaleData =
+    options.keepPreviousData !== true &&
+    state.error === null &&
+    (shouldRefreshOnMount || (state.pending && hideDataKeys.current.has(stableKey)));
+  const data = hideStaleData ? undefined : state.data;
+  const pending = state.pending || (shouldRefreshOnMount && state.error === null);
 
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (options.enabled === false) return;
     const controller = new AbortController();
     const current = client.getQueryState<TData, TError>(routeKey, input);
@@ -168,11 +187,27 @@ export function useQuery<TData = unknown, TError = unknown>(
           ? isStale(current.updatedAt, options.staleTime)
           : true;
     const request = shouldRefresh ? client.refresh : client.query;
+    const requestOptions: CallOptions = {
+      ...call,
+      signal: controller.signal,
+      ...(shouldRefresh && options.keepPreviousData !== true ? { cache: "no-store" } : {}),
+    };
+    if (shouldRefresh && options.keepPreviousData !== true) hideDataKeys.current.add(stableKey);
     void request
-      .call(client, routeKey, input, { ...call, signal: controller.signal })
+      .call(client, routeKey, input, requestOptions)
+      .finally(() => hideDataKeys.current.delete(stableKey))
       .catch(() => {});
+    mountedKeys.current.add(stableKey);
     return () => controller.abort();
-  }, [client, routeKey, stableKey, options.enabled, options.refetchOnMount, options.staleTime]);
+  }, [
+    client,
+    routeKey,
+    stableKey,
+    options.enabled,
+    options.keepPreviousData,
+    options.refetchOnMount,
+    options.staleTime,
+  ]);
 
   useEffect(() => {
     warnOnHydrationKeyMismatch(client, routeKey, input, stableKey, state.data);
@@ -193,8 +228,8 @@ export function useQuery<TData = unknown, TError = unknown>(
   );
 
   return {
-    data: state.data,
-    pending: state.pending,
+    data,
+    pending,
     error: state.error,
     refresh,
     setData,
