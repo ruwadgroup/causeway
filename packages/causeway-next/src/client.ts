@@ -9,10 +9,19 @@ import {
   type CausewayFeedback,
 } from "@causewayjs/react";
 
-export type ClientFactory<
-  TClient extends CausewayClient = CausewayClient,
-  TOptions extends object = object,
-> = (options?: TOptions) => TClient;
+export type ClientFactory<TClient = CausewayClient, TOptions extends object = object> = (
+  options?: TOptions,
+) => TClient;
+
+export type HeaderRecord = Record<string, string | null | undefined>;
+
+export type BrowserClientOptions<TOptions extends object> = Omit<TOptions, "fetch" | "headers"> & {
+  baseUrl?: string;
+  credentials?: RequestCredentials;
+  fetch?: typeof globalThis.fetch;
+  headers?: HeaderRecord | (() => HeaderRecord | null | undefined);
+  idempotency?: boolean;
+};
 
 export interface HydrateClientProps {
   state?: DehydratedClient | null;
@@ -22,7 +31,7 @@ export interface HydrateClientProps {
 }
 
 export function createHydrateClient<
-  TFactory extends ClientFactory,
+  TFactory extends (options?: any) => any,
   TOptions extends object = Parameters<TFactory>[0] extends object
     ? NonNullable<Parameters<TFactory>[0]>
     : object,
@@ -31,16 +40,15 @@ export function createHydrateClient<
     const hydrationState = state ?? snapshot;
     const hydrationKey = useMemo(() => snapshotKey(hydrationState), [hydrationState]);
     const parentClient = useOptionalCausewayClient();
-    const fallbackClient = useRef<CausewayClient | null>(null);
+    const fallbackClient = useRef<unknown>(null);
     const lastHydration = useRef<{ client: CausewayClient; key: string } | null>(null);
     const lastNotification = useRef<{ client: CausewayClient; key: string } | null>(null);
 
     if (parentClient === null && fallbackClient.current === null) {
-      const next = factory(options);
-      fallbackClient.current = next;
+      fallbackClient.current = factory(options);
     }
 
-    const client = parentClient ?? fallbackClient.current!;
+    const client = (parentClient ?? fallbackClient.current) as CausewayClient;
 
     if (hydrationState != null && hydrationKey != null) {
       const last = lastHydration.current;
@@ -66,6 +74,40 @@ export function createHydrateClient<
   };
 }
 
+export function createBrowserClient<TFactory extends (options?: any) => any>(
+  factory: TFactory,
+  options?: BrowserClientOptions<
+    Parameters<TFactory>[0] extends object ? NonNullable<Parameters<TFactory>[0]> : object
+  >,
+): ReturnType<TFactory> {
+  const {
+    credentials = "include",
+    fetch: fetchImpl = fetch,
+    headers,
+    idempotency = true,
+    ...rest
+  } = options ?? {};
+
+  return factory({
+    baseUrl: "/api",
+    ...rest,
+    fetch: (input: RequestInfo | URL, init?: RequestInit) => {
+      const nextHeaders = new Headers(init?.headers);
+      const configured = typeof headers === "function" ? headers() : headers;
+      for (const [key, value] of Object.entries(configured ?? {})) {
+        if (value != null && !nextHeaders.has(key)) nextHeaders.set(key, value);
+      }
+      const method = (init?.method ?? "GET").toUpperCase();
+      if (idempotency && WRITE_METHODS.has(method) && !nextHeaders.has("Idempotency-Key")) {
+        nextHeaders.set("Idempotency-Key", crypto.randomUUID());
+      }
+      return fetchImpl(input, { ...init, credentials, headers: nextHeaders });
+    },
+  } as Parameters<TFactory>[0]) as ReturnType<TFactory>;
+}
+
 function snapshotKey(snapshot: DehydratedClient | null | undefined): string | null {
   return snapshot == null ? null : JSON.stringify(snapshot);
 }
+
+const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);

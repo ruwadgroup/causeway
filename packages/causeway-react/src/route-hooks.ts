@@ -45,6 +45,8 @@ export interface CausewayProviderProps {
 
 export interface QueryHookOptions {
   enabled?: boolean;
+  refetchOnMount?: boolean | "stale";
+  staleTime?: number;
 }
 
 export interface QueryHookResult<TData = unknown, TError = unknown> {
@@ -158,11 +160,19 @@ export function useQuery<TData = unknown, TError = unknown>(
   useEffect(() => {
     if (options.enabled === false) return;
     const controller = new AbortController();
-    void client
-      .query<TData>(routeKey, input, { ...call, signal: controller.signal })
+    const current = client.getQueryState<TData, TError>(routeKey, input);
+    const shouldRefresh =
+      options.refetchOnMount === false
+        ? current.data === undefined
+        : options.refetchOnMount === "stale"
+          ? isStale(current.updatedAt, options.staleTime)
+          : true;
+    const request = shouldRefresh ? client.refresh : client.query;
+    void request
+      .call(client, routeKey, input, { ...call, signal: controller.signal })
       .catch(() => {});
     return () => controller.abort();
-  }, [client, routeKey, stableKey, options.enabled]);
+  }, [client, routeKey, stableKey, options.enabled, options.refetchOnMount, options.staleTime]);
 
   useEffect(() => {
     warnOnHydrationKeyMismatch(client, routeKey, input, stableKey, state.data);
@@ -239,6 +249,10 @@ function isBrowserRuntime(): boolean {
 function isDevRuntime(): boolean {
   const env = (globalThis as { process?: { env?: { NODE_ENV?: string } } }).process?.env?.NODE_ENV;
   return env !== "production";
+}
+
+function isStale(updatedAt: number | undefined, staleTime: number = 0): boolean {
+  return updatedAt === undefined || Date.now() - updatedAt >= staleTime;
 }
 
 function formatDevValue(value: unknown): string {

@@ -22,17 +22,17 @@ import type { HydrateClientProps } from "./client.js";
 export interface ServerClientConfig extends Omit<ClientConfig, "headers" | "scope"> {
   headers?: HeaderSource;
   extraHeaders?: Record<string, string>;
+  idempotency?: boolean;
   scope?: unknown;
 }
 
-export type ClientFactory<
-  TClient extends CausewayClient = CausewayClient,
-  TOptions extends object = object,
-> = (options?: TOptions) => TClient;
+export type ClientFactory<TClient = CausewayClient, TOptions extends object = object> = (
+  options?: TOptions,
+) => TClient;
 
-type AnyClientFactory = (options?: object) => CausewayClient;
+type AnyClientFactory = (options?: object) => unknown;
 
-type FactoryOptions<TFactory> = TFactory extends (options?: infer TOptions) => CausewayClient
+type FactoryOptions<TFactory> = TFactory extends (options?: infer TOptions) => unknown
   ? NonNullable<TOptions> extends object
     ? NonNullable<TOptions>
     : object
@@ -41,6 +41,7 @@ type FactoryOptions<TFactory> = TFactory extends (options?: infer TOptions) => C
 export type ServerClientOptions<TOptions extends object> = Omit<TOptions, "headers"> & {
   headers?: HeaderSource;
   extraHeaders?: Record<string, string>;
+  idempotency?: boolean;
 };
 
 export type HydrateClientComponent = (props: HydrateClientProps) => ReactElement | null;
@@ -59,20 +60,20 @@ export type HydrationOptions<TOptions extends object> = ServerClientOptions<TOpt
   prefetch?: readonly PrefetchRequest[];
 };
 
-export interface PreparedHydration<TClient extends CausewayClient = CausewayClient> {
+export interface PreparedHydration<TClient = CausewayClient> {
   client: TClient;
   snapshot: DehydratedClient;
 }
 
 export function createServerClient<
-  TFactory extends ClientFactory,
-  TClient extends CausewayClient = ReturnType<TFactory>,
+  TFactory extends (options?: any) => any,
+  TClient = ReturnType<TFactory>,
 >(factory: TFactory, config?: ServerClientOptions<FactoryOptions<TFactory>>): TClient;
 export function createServerClient(config: ServerClientConfig): CausewayClient;
 export function createServerClient(
   factoryOrConfig: AnyClientFactory | ServerClientConfig,
   config?: ServerClientOptions<object>,
-): CausewayClient {
+): unknown {
   if (typeof factoryOrConfig === "function") {
     return factoryOrConfig(normalizeServerOptions(config));
   }
@@ -110,7 +111,7 @@ export interface Prefetcher {
   ): Promise<TData>;
 }
 
-export interface ServerHydration<TClient extends CausewayClient = CausewayClient> {
+export interface ServerHydration<TClient = CausewayClient> {
   client: TClient;
   prefetch: Prefetcher;
   prefetchMany: (...requests: readonly PrefetchRequest[]) => Promise<TClient>;
@@ -124,26 +125,26 @@ export interface ServerHydration<TClient extends CausewayClient = CausewayClient
 }
 
 export async function prefetch<K extends RegisteredQueryRouteKey>(
-  client: CausewayClient,
+  client: unknown,
   options: QueryOptions<K, RegisteredRouteInput<K>>,
 ): Promise<RegisteredRouteData<K>>;
 export async function prefetch<K extends RegisteredQueryRouteKey>(
-  client: CausewayClient,
+  client: unknown,
   routeKey: K,
   ...args: RegisteredQueryArgs<K>
 ): Promise<RegisteredRouteData<K>>;
 export async function prefetch<TData = unknown>(
-  client: CausewayClient,
+  client: unknown,
   options: QueryOptions<UnregisteredRouteKey>,
 ): Promise<TData>;
 export async function prefetch<TData = unknown>(
-  client: CausewayClient,
+  client: unknown,
   routeKey: UnregisteredRouteKey,
   input?: RouteInputValue,
   opts?: CallOptions,
 ): Promise<TData>;
 export async function prefetch<TData = unknown>(
-  client: CausewayClient,
+  client: unknown,
   routeKeyOrOptions: string | QueryOptions,
   input?: RouteInputValue,
   opts?: CallOptions,
@@ -151,25 +152,25 @@ export async function prefetch<TData = unknown>(
   const request = normalizePrefetchRequest(
     typeof routeKeyOrOptions === "string" ? [routeKeyOrOptions, input, opts] : routeKeyOrOptions,
   );
-  return await client.query<TData>(request.routeKey, request.input, request.call);
+  return (await queryClient(client).query(request.routeKey, request.input, request.call)) as TData;
 }
 
-export async function prefetchMany<TClient extends CausewayClient>(
+export async function prefetchMany<TClient>(
   client: TClient,
   ...requests: readonly PrefetchRequest[]
 ): Promise<TClient> {
   await Promise.all(
     requests.map((request) => {
       const { call, input, routeKey } = normalizePrefetchRequest(request);
-      return client.query(routeKey, input, call);
+      return queryClient(client).query(routeKey, input, call);
     }),
   );
   return client;
 }
 
 export function createServerHydration<
-  TFactory extends ClientFactory,
-  TClient extends CausewayClient = ReturnType<TFactory>,
+  TFactory extends (options?: any) => any,
+  TClient = ReturnType<TFactory>,
 >(
   factory: TFactory,
   config?: ServerHydrationOptions<FactoryOptions<TFactory>>,
@@ -189,7 +190,7 @@ export function createServerHydration(
   } = splitServerHydrationOptions(hydrationOptions);
   const client =
     typeof factoryOrConfig === "function"
-      ? createServerClient(factoryOrConfig, clientOptions)
+      ? createServerClient(factoryOrConfig as ClientFactory<CausewayClient, object>, clientOptions)
       : createServerClient(clientOptions as ServerClientConfig);
   let prefetched = false;
   let rendered = false;
@@ -217,7 +218,7 @@ export function createServerHydration(
     const request = normalizePrefetchRequest(
       typeof routeKeyOrOptions === "string" ? [routeKeyOrOptions, input, opts] : routeKeyOrOptions,
     );
-    const data = await client.query(request.routeKey, request.input, request.call);
+    const data = await queryClient(client).query(request.routeKey, request.input, request.call);
     markPrefetched();
     return data;
   }) as Prefetcher;
@@ -231,14 +232,17 @@ export function createServerHydration(
     },
     HydrateClient: (props) => {
       markRendered();
-      return renderHydrateClient(client, ClientBoundary, feedback, props);
+      return renderHydrateClient(asCausewayClient(client), ClientBoundary, feedback, props);
     },
     hydrate: (children, props = {}) => {
       markRendered();
-      return renderHydrateClient(client, ClientBoundary, feedback, { ...props, children });
+      return renderHydrateClient(asCausewayClient(client), ClientBoundary, feedback, {
+        ...props,
+        children,
+      });
     },
-    dehydrate: () => dehydrate(client),
-    snapshot: () => dehydrate(client),
+    dehydrate: () => dehydrate(asCausewayClient(client)),
+    snapshot: () => dehydrate(asCausewayClient(client)),
   };
 }
 
@@ -280,31 +284,28 @@ export function dehydrate(client: CausewayClient): DehydratedClient {
   return client.dehydrate();
 }
 
-export function hydrate<
-  TFactory extends ClientFactory,
-  TClient extends CausewayClient = ReturnType<TFactory>,
->(
+export function hydrate<TFactory extends (options?: any) => any, TClient = ReturnType<TFactory>>(
   factory: TFactory,
   snapshot: DehydratedClient | null | undefined,
   options?: FactoryOptions<TFactory>,
 ): TClient;
-export function hydrate<TClient extends CausewayClient>(
+export function hydrate<TClient>(
   client: TClient,
   snapshot: DehydratedClient | null | undefined,
 ): TClient;
 export function hydrate(
-  clientOrFactory: CausewayClient | AnyClientFactory,
+  clientOrFactory: unknown | AnyClientFactory,
   snapshot: DehydratedClient | null | undefined,
   options?: object,
-): CausewayClient {
+): unknown {
   const client = typeof clientOrFactory === "function" ? clientOrFactory(options) : clientOrFactory;
-  if (snapshot != null) client.hydrate(snapshot);
+  if (snapshot != null) asCausewayClient(client).hydrate(snapshot);
   return client;
 }
 
 export async function prepareHydration<
-  TFactory extends ClientFactory,
-  TClient extends CausewayClient = ReturnType<TFactory>,
+  TFactory extends (options?: any) => any,
+  TClient = ReturnType<TFactory>,
 >(
   factory: TFactory,
   options?: HydrationOptions<FactoryOptions<TFactory>>,
@@ -320,20 +321,26 @@ export async function prepareHydration(
     typeof factoryOrOptions === "function" ? (options ?? {}) : factoryOrOptions;
   const client =
     typeof factoryOrOptions === "function"
-      ? createServerClient(factoryOrOptions, clientOptions)
+      ? createServerClient(factoryOrOptions as ClientFactory<CausewayClient, object>, clientOptions)
       : createServerClient(clientOptions as ServerClientConfig);
   await prefetchMany(client, ...requests);
-  return { client, snapshot: dehydrate(client) };
+  return { client, snapshot: dehydrate(asCausewayClient(client)) };
 }
 
 function normalizeServerOptions<TOptions extends object>(
   config: ServerClientOptions<TOptions> | ServerClientConfig | undefined,
-): Omit<TOptions, "headers"> & { headers: Record<string, string> } {
-  const { headers, extraHeaders, ...rest } = config ?? {};
+): Omit<TOptions, "headers"> & { fetch: typeof globalThis.fetch; headers: Record<string, string> } {
+  const source = (config ?? {}) as ServerClientOptions<TOptions> &
+    ServerClientConfig & { fetch?: typeof globalThis.fetch };
+  const { fetch: fetchImpl, headers, extraHeaders, idempotency = true, ...rest } = source;
   return {
     ...rest,
+    fetch: withIdempotency(fetchImpl ?? fetch, idempotency),
     headers: { ...forwardHeaders(headers), ...extraHeaders },
-  } as Omit<TOptions, "headers"> & { headers: Record<string, string> };
+  } as Omit<TOptions, "headers"> & {
+    fetch: typeof globalThis.fetch;
+    headers: Record<string, string>;
+  };
 }
 
 export function idempotencyHeaders(key: string = crypto.randomUUID()): Record<string, string> {
@@ -348,6 +355,30 @@ function normalizePrefetchRequest(
   }
   return request as QueryOptions<string, RouteInputValue>;
 }
+
+function asCausewayClient(client: unknown): CausewayClient {
+  return client as unknown as CausewayClient;
+}
+
+function queryClient(client: unknown): CausewayClient {
+  return client as unknown as CausewayClient;
+}
+
+function withIdempotency(
+  fetchImpl: typeof globalThis.fetch,
+  enabled: boolean,
+): typeof globalThis.fetch {
+  if (!enabled) return fetchImpl;
+  return (input, init) => {
+    const method = (init?.method ?? "GET").toUpperCase();
+    if (!WRITE_METHODS.has(method)) return fetchImpl(input, init);
+    const headers = new Headers(init?.headers);
+    if (!headers.has("Idempotency-Key")) headers.set("Idempotency-Key", crypto.randomUUID());
+    return fetchImpl(input, { ...init, headers });
+  };
+}
+
+const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 function isDevRuntime(): boolean {
   const env = (globalThis as { process?: { env?: { NODE_ENV?: string } } }).process?.env?.NODE_ENV;

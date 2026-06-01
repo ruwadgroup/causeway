@@ -222,6 +222,25 @@ describe("createRouteKeyClient", () => {
     expect(url).toBe("http://api.test/search?q=hi&limit=5");
   });
 
+  it("omits nullish query params", async () => {
+    const fetchMock = makeFetch(
+      () =>
+        new Response(JSON.stringify({ q: "hi" }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+    );
+    const client = createTestClient({
+      baseUrl: "http://api.test",
+      fetch: fetchMock,
+    });
+
+    await client.query("GET /search", { q: null, limit: undefined });
+
+    const [url] = fetchMock.mock.calls[0]!;
+    expect(url).toBe("http://api.test/search");
+  });
+
   it("camelCases response keys for snake_case payloads", async () => {
     const fetchMock = makeFetch(
       () =>

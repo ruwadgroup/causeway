@@ -349,7 +349,7 @@ function buildRequest(
 
   for (const p of route.params ?? []) {
     const v = args[p.name];
-    if (v === undefined) continue;
+    if (v === undefined || (p.in === "query" && v === null)) continue;
     switch (p.in) {
       case "path": {
         path = path.replace(`{${p.alias}}`, encodeURIComponent(String(v)));
@@ -358,8 +358,11 @@ function buildRequest(
       case "query": {
         // Arrays expand to repeated keys: ?tag=a&tag=b. Servers using
         // request.query_params.getlist(...) recover the list.
-        if (Array.isArray(v)) for (const item of v) query.append(p.alias, String(item));
-        else query.append(p.alias, String(v));
+        if (Array.isArray(v)) {
+          for (const item of v) {
+            if (item !== null && item !== undefined) query.append(p.alias, String(item));
+          }
+        } else query.append(p.alias, String(v));
         break;
       }
       case "header": {

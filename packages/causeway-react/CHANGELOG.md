@@ -8,6 +8,12 @@ this file. Managed automatically by
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.6-alpha.2] - 2026-06-01
+
+### Fixed
+
+- Repack against `@causewayjs/client` 0.1.0-alpha.2.
+
 ## [0.2.6-alpha.0](https://github.com/tamimbinhakim/causeway/compare/dyadpy-react-v0.2.5-alpha.0...causeway-react-v0.2.6-alpha.0) (2026-05-30)
 
 ### Features

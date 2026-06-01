@@ -1,5 +1,9 @@
 # @causewayjs/next
 
+## 0.1.2-alpha.2
+
+- Repack against `@causewayjs/client` 0.1.0-alpha.2.
+
 ## 0.1.2-alpha.0
 
 - Hydrate reused provider clients before rendering boundary children, keeping App Router soft-navigation SSR output aligned with existing browser cache.

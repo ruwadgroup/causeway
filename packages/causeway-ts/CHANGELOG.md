@@ -57,3 +57,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Initial scaffold: `createClient` Proxy factory, `parseSSE` minimal
   Server-Sent Events parser, shared `RouteDescriptor` / `Result` types.
+
+## [0.1.7-alpha.2] - 2026-06-01
+
+### Fixed
+
+- Omit `null` and `undefined` query parameter values in the route-key client.
