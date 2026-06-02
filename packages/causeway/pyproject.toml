@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "causeway"
-version = "0.6.3"
+version = "0.6.4"
 description = "A lean backend framework for type-safe Python APIs — file-based routing, typed config/DI, scoped providers, plugin registry, and background tasks."
 readme = "README.md"
 license = { text = "MIT" }

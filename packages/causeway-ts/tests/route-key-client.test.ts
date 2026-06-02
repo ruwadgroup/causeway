@@ -29,6 +29,19 @@ const routes: Record<string, RouteDescriptor> = {
     params: [{ name: "body", alias: "body", in: "body" }],
     refreshes: ["GET /staff/teams"],
   },
+  getExport: {
+    method: "GET",
+    path: "/exports/{id}",
+    routeKey: "GET /exports/$id",
+    params: [{ name: "id", alias: "id", in: "path" }],
+  },
+  createExport: {
+    method: "POST",
+    path: "/exports",
+    routeKey: "POST /exports",
+    params: [{ name: "body", alias: "body", in: "body" }],
+    refreshes: ["GET /exports/$id"],
+  },
 };
 
 const routeMeta: RouteMeta[] = Object.entries(routes).map(([id, route]) => ({
@@ -86,6 +99,16 @@ describe("createRouteKeyClient", () => {
     await client.query("GET /customers/$id", { id: "c_1" }, { signal: controller.signal });
   });
 
+  it("fails before fetch when a direct call is missing a path parameter", async () => {
+    const fetchMock = vi.fn<typeof fetch>();
+    const client = makeClient(fetchMock);
+
+    await expect(client.query("GET /customers/$id", {})).rejects.toThrow(
+      'Missing path parameter "id"',
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("runs declared refreshes after a successful mutation", async () => {
     const fetchMock = vi.fn<typeof fetch>(async (url, init) => {
       if (init?.method === "POST") {
@@ -132,6 +155,47 @@ describe("createRouteKeyClient", () => {
     ]);
     expect(client.getData("GET /staff/teams")).toEqual([{ id: "team_1", name: "Platform" }]);
     expect(client.getData("GET /staff/teams", { body: { name: "Platform" } })).toBeUndefined();
+  });
+
+  it("does not reject a successful mutation when an automatic refresh fails", async () => {
+    const fetchMock = vi.fn<typeof fetch>(async (_url, init) => {
+      if (init?.method === "POST") {
+        return new Response(JSON.stringify({ screened: true }), {
+          headers: { "content-type": "application/json" },
+        });
+      }
+      return new Response("Not Found", { status: 404 });
+    });
+    const client = makeClient(fetchMock);
+
+    await expect(client.mutate("POST /customers/$id/screen", { id: "c_1" })).resolves.toEqual({
+      screened: true,
+    });
+
+    expect(fetchMock.mock.calls.map(([url, init]) => [url, init?.method])).toEqual([
+      ["https://api.test/customers/c_1/screen", "POST"],
+      ["https://api.test/customers/c_1", "GET"],
+    ]);
+    expect(client.getQueryState("GET /customers/$id", { id: "c_1" }).error).toMatchObject({
+      kind: "HttpError",
+      status: 404,
+    });
+  });
+
+  it("skips parameterized refreshes when the mutation input cannot fill the path", async () => {
+    const fetchMock = vi.fn<typeof fetch>(
+      async () =>
+        new Response(JSON.stringify({ id: "export_1" }), {
+          headers: { "content-type": "application/json" },
+        }),
+    );
+    const client = makeClient(fetchMock);
+
+    await client.mutate("POST /exports", { body: { kind: "customers" } });
+
+    expect(fetchMock.mock.calls.map(([url, init]) => [url, init?.method])).toEqual([
+      ["https://api.test/exports", "POST"],
+    ]);
   });
 
   it("does not notify subscribers when hydrating an unchanged snapshot", async () => {

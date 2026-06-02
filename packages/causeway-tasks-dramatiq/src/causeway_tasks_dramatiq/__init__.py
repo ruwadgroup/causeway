@@ -9,6 +9,7 @@ payload.
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import json
 from collections.abc import AsyncIterator
@@ -17,7 +18,32 @@ from typing import Any, ClassVar
 
 import dramatiq
 from dramatiq.brokers.redis import RedisBroker
-from causeway.tasks import TaskRef, TaskState, set_adapter
+from dramatiq.errors import ActorNotFound
+from periodiq import PeriodiqMiddleware, cron as periodiq_cron
+
+from causeway.tasks import TaskRef, TaskState, cron_jobs, registered_tasks, set_adapter
+
+_DEFAULT_BROKER_URL = "redis://localhost"
+
+
+def _secret_value(value: Any) -> Any:
+    getter = getattr(value, "get_secret_value", None)
+    return getter() if callable(getter) else value
+
+
+def _broker_url_from_settings(settings: Any) -> str | None:
+    if settings is None:
+        return None
+    url = _secret_value(getattr(settings, "redis_url", None))
+    return str(url) if url else None
+
+
+def _cron_expr_for(task: TaskRef) -> str | None:
+    key = f"{task.module}.{task.name}"
+    for ref, expr in cron_jobs():
+        if ref is task or f"{ref.module}.{ref.name}" == key:
+            return expr
+    return None
 
 
 class DramatiqAdapter:
@@ -31,14 +57,25 @@ class DramatiqAdapter:
 
     contract_version: ClassVar[str] = "v1.1"
 
-    def __init__(self, broker_url: str) -> None:
-        self.broker_url = broker_url
+    def __init__(self, broker_url: str | None = None, *, periodiq_skip_delay: int = 30) -> None:
+        self.broker_url = broker_url or _DEFAULT_BROKER_URL
+        self._uses_default_broker_url = broker_url is None
+        self.periodiq_skip_delay = periodiq_skip_delay
         self._broker: RedisBroker | None = None
         self._actors: dict[str, Any] = {}
 
+    @property
+    def broker(self) -> RedisBroker | None:
+        return self._broker
+
     async def startup(self, settings: Any) -> None:  # noqa: ARG002
+        if self._uses_default_broker_url:
+            self.broker_url = _broker_url_from_settings(settings) or self.broker_url
         self._broker = RedisBroker(url=self.broker_url)
+        self._broker.add_middleware(PeriodiqMiddleware(skip_delay=self.periodiq_skip_delay))
         dramatiq.set_broker(self._broker)
+        for task in registered_tasks().values():
+            self._actor_for(task)
         set_adapter(self)
 
     async def shutdown(self) -> None:
@@ -50,24 +87,34 @@ class DramatiqAdapter:
     async def ready(self) -> bool:
         return self._broker is not None
 
-    def _actor_for(self, task: TaskRef) -> Any:
+    def _actor_for(self, task: TaskRef, *, cron_expr: str | None = None) -> Any:
         key = f"{task.module}.{task.name}"
         if key in self._actors:
             return self._actors[key]
+        try:
+            actor = dramatiq.get_broker().get_actor(key)
+        except ActorNotFound:
+            actor = None
+        if actor is not None:
+            self._actors[key] = actor
+            return actor
         if task.fn is None:
             msg = f"{task!r} has no callable bound; cannot create Dramatiq actor"
             raise RuntimeError(msg)
 
         target = task.fn
+        expr = cron_expr or _cron_expr_for(task)
+        actor_kwargs: dict[str, Any] = {
+            "actor_name": key,
+            "queue_name": task.queue,
+            "max_retries": task.retries,
+            "min_backoff": 100,
+        }
+        if expr is not None:
+            actor_kwargs["periodic"] = periodiq_cron(expr)
 
-        @dramatiq.actor(
-            queue_name=task.queue,
-            max_retries=task.retries,
-            min_backoff=100,
-        )
-        def _run(payload_json: str) -> None:
-            import asyncio
-
+        @dramatiq.actor(**actor_kwargs)
+        def _run(payload_json: str = '{"args": [], "kwargs": {}}') -> None:
             payload = json.loads(payload_json)
             asyncio.run(target(*payload.get("args", []), **payload.get("kwargs", {})))
 
@@ -88,10 +135,7 @@ class DramatiqAdapter:
         return str(message.message_id)
 
     async def cron(self, task: TaskRef, expr: str) -> None:
-        # Dramatiq has no cron of its own; users pair it with ``dramatiq-crontab``
-        # or ``apscheduler``. Register the actor and no-op the schedule.
-        del expr
-        self._actor_for(task)
+        self._actor_for(task, cron_expr=expr)
 
     def eager(self) -> contextlib.AbstractAsyncContextManager[None]:
         return self._eager_context()
@@ -142,10 +186,7 @@ def plugin(settings: Any) -> None:
     """Entry-point hook. Reads ``settings.redis_url`` if available."""
     from causeway import register
 
-    url = getattr(settings, "redis_url", None) or "redis://localhost"
-    if hasattr(url, "get_secret_value"):
-        url = url.get_secret_value()
-    register(DramatiqAdapter(broker_url=str(url)))
+    register(DramatiqAdapter(broker_url=_broker_url_from_settings(settings)))
 
 
 __all__ = ["DramatiqAdapter", "plugin"]

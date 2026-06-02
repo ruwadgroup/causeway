@@ -25,7 +25,8 @@ Returns a [`TaskRef`](../classes/TaskRef.md), queued under `cron`, with retries 
 The cron loop is owned by the registered [`TaskAdapter`](../classes/contracts.md):
 
 - **`InMemoryAdapter`** — internal asyncio loop with `next_fire` computation.
-- **`DramatiqAdapter`** — Dramatiq's own scheduler.
+- **`DramatiqAdapter`** — `causeway-dramatiq scheduler` uses Periodiq to emit jobs,
+  while `causeway-dramatiq worker` consumes them.
 - **`CeleryAdapter`** — `celery-beat`.
 - **`ArqAdapter`** — `cron_jobs`.
 

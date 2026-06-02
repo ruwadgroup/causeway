@@ -171,6 +171,7 @@ export function useQuery<TData = unknown, TError = unknown>(
       state.data === undefined);
   const hideStaleData =
     options.keepPreviousData !== true &&
+    state.data === undefined &&
     state.error === null &&
     (shouldRefreshOnMount || (state.pending && hideDataKeys.current.has(stableKey)));
   const data = hideStaleData ? undefined : state.data;

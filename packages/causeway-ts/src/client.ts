@@ -15,6 +15,8 @@ import type {
 type Args = Record<string, unknown>;
 type FetchImpl = typeof globalThis.fetch;
 const EMPTY_QUERY_STATE: QueryState = Object.freeze({ error: null, pending: false });
+const SKIP_REFRESH = Symbol("causeway.skipRefresh");
+type ProjectedRefreshInput = Record<string, unknown> | void | typeof SKIP_REFRESH;
 
 interface QueryEntry {
   routeKey: string;
@@ -94,12 +96,7 @@ export function createRouteKeyClient(config: ClientConfig): CausewayClient {
       const meta = metaByRouteKey.get(routeKey);
       const descriptor = meta === undefined ? undefined : await loadRoute(meta.id);
       const refreshes = descriptor?.refreshes ?? meta?.refreshes ?? [];
-      await Promise.all(
-        refreshes.map(async (key) => {
-          const refreshInput = await projectRefreshInput(key, input);
-          return await client.refresh(key, refreshInput, opts);
-        }),
-      );
+      await Promise.all(refreshes.map((key) => refreshAfterMutation(key, input, opts)));
       return data as TData;
     },
     stream<TEvent = unknown>(
@@ -184,10 +181,25 @@ export function createRouteKeyClient(config: ClientConfig): CausewayClient {
     },
   };
 
+  async function refreshAfterMutation(
+    routeKey: string,
+    mutationInput: Record<string, unknown> | void | undefined,
+    opts: CallOptions,
+  ): Promise<void> {
+    try {
+      const refreshInput = await projectRefreshInput(routeKey, mutationInput);
+      if (refreshInput === SKIP_REFRESH) return;
+      await client.refresh(routeKey, refreshInput, opts);
+    } catch {
+      // A mutation has already succeeded by the time refreshes run. Keep the
+      // write result intact and let the refreshed query cache carry its error.
+    }
+  }
+
   async function projectRefreshInput(
     routeKey: string,
     mutationInput: Record<string, unknown> | void | undefined,
-  ): Promise<Record<string, unknown> | void> {
+  ): Promise<ProjectedRefreshInput> {
     const meta = requireRouteMeta(metaByRouteKey, routeKey);
     const descriptor = await loadRoute(meta.id);
     const params = descriptor.params ?? [];
@@ -195,6 +207,12 @@ export function createRouteKeyClient(config: ClientConfig): CausewayClient {
     const source = (mutationInput ?? {}) as Record<string, unknown>;
     const input: Record<string, unknown> = {};
     for (const param of params) {
+      if (
+        param.in === "path" &&
+        (source[param.name] === undefined || source[param.name] === null)
+      ) {
+        return SKIP_REFRESH;
+      }
       if (param.name in source) input[param.name] = source[param.name];
     }
     return input;
@@ -239,6 +257,12 @@ export function createRouteKeyClient(config: ClientConfig): CausewayClient {
         return data;
       })
       .catch((error: unknown) => {
+        if (isAbortError(error)) {
+          if (previous === undefined) entries.delete(key);
+          else entries.set(key, previous);
+          notify(listeners, key);
+          throw error;
+        }
         entries.set(key, {
           routeKey,
           input: input ?? {},
@@ -322,6 +346,24 @@ function queryStatesEqual(left: QueryState | undefined, right: QueryState): bool
 
 function stableStringify(value: unknown): string {
   return JSON.stringify(canonicalize(value));
+}
+
+function isAbortError(error: unknown): boolean {
+  if (!error) return false;
+  if (error instanceof DOMException && error.name === "AbortError") return true;
+  if (error instanceof Error) {
+    return (
+      error.name === "AbortError" || /signal is aborted|aborted without reason/i.test(error.message)
+    );
+  }
+  if (typeof error === "string") return /signal is aborted|aborted without reason/i.test(error);
+  if (typeof error === "object") {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string" && /signal is aborted|aborted without reason/i.test(message))
+      return true;
+    return isAbortError((error as { cause?: unknown }).cause);
+  }
+  return false;
 }
 
 function canonicalize(value: unknown): unknown {
@@ -437,6 +479,12 @@ function buildRequest(
   }
 
   const qs = query.toString();
+  const missingPathParam = path.match(/\{([^}]+)\}/);
+  if (missingPathParam) {
+    throw new Error(
+      `Missing path parameter "${missingPathParam[1]}" for Causeway route ${route.routeKey}`,
+    );
+  }
   return {
     url: `${baseUrl}${path}${qs ? `?${qs}` : ""}`,
     init: { method: route.method, headers, body, signal: opts.signal },

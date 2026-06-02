@@ -13,7 +13,11 @@ authors = [{ name = "Tamim Bin Hakim" }]
 dependencies = [
   "causeway>=0.1.0",
   "dramatiq[redis]>=2.1.0",
+  "periodiq>=0.14.0",
 ]
+
+[project.scripts]
+causeway-dramatiq = "causeway_tasks_dramatiq.cli:main"
 
 [project.entry-points."causeway.plugins"]
 tasks-dramatiq = "causeway_tasks_dramatiq:plugin"

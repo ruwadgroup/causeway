@@ -1,22 +1,26 @@
 from __future__ import annotations
 
+import asyncio
+import os
 import types
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-import dramatiq
 import pytest
 from dramatiq.brokers.stub import StubBroker
 from pydantic import SecretStr
+from typer.testing import CliRunner
 
 import causeway.plugins as plugin_registry
-from causeway.tasks import TaskRef
+from causeway.tasks import TaskRef, _clear as clear_tasks, cron, task
 from causeway_tasks_dramatiq import DramatiqAdapter, plugin
+from causeway_tasks_dramatiq.cli import cli
 
 
 @pytest.fixture(autouse=True)
 def _clear_registry() -> None:
     plugin_registry.clear()
+    clear_tasks()
 
 
 @pytest.fixture
@@ -74,6 +78,25 @@ async def test_enqueue_pushes_to_broker(stub_broker: dict[str, StubBroker]) -> N
         await adapter.shutdown()
 
 
+async def test_actor_names_are_stable_and_distinct(
+    stub_broker: dict[str, StubBroker],
+) -> None:
+    called: list[tuple[Any, ...]] = []
+    first = _make_ref("first", called)
+    second = _make_ref("second", called)
+
+    adapter = DramatiqAdapter(broker_url="redis://x")
+    await adapter.startup(None)
+    try:
+        await adapter.enqueue(first, b'{"args": [], "kwargs": {}}')
+        await adapter.enqueue(second, b'{"args": [], "kwargs": {}}')
+        assert set(adapter._actors) == {"tests.first", "tests.second"}
+        assert adapter._actors["tests.first"].actor_name == "tests.first"
+        assert adapter._actors["tests.second"].actor_name == "tests.second"
+    finally:
+        await adapter.shutdown()
+
+
 async def test_enqueue_without_callable_raises(
     stub_broker: dict[str, StubBroker],
 ) -> None:
@@ -125,7 +148,29 @@ async def test_cron_registers_actor_only(stub_broker: dict[str, StubBroker]) -> 
     await adapter.startup(None)
     try:
         await adapter.cron(ref, "*/5 * * * *")
-        assert "tests.every" in adapter._actors
+        actor = adapter._actors["tests.every"]
+        assert str(actor.options["periodic"]) == "*/5 * * * *"
+    finally:
+        await adapter.shutdown()
+
+
+async def test_startup_registers_discovered_tasks(
+    stub_broker: dict[str, StubBroker],
+) -> None:
+    @task()
+    async def queued() -> None:
+        pass
+
+    @cron("0 * * * *")
+    async def hourly() -> None:
+        pass
+
+    adapter = DramatiqAdapter(broker_url="redis://x")
+    await adapter.startup(None)
+    try:
+        assert f"{queued.module}.{queued.name}" in adapter._actors
+        cron_actor = adapter._actors[f"{hourly.module}.{hourly.name}"]
+        assert str(cron_actor.options["periodic"]) == "0 * * * *"
     finally:
         await adapter.shutdown()
 
@@ -165,6 +210,19 @@ def test_plugin_defaults_to_localhost(stub_broker: dict[str, StubBroker]) -> Non
     assert adapter.broker_url == "redis://localhost"
 
 
+async def test_plugin_default_reads_settings_on_startup(
+    stub_broker: dict[str, StubBroker],
+) -> None:
+    plugin(types.SimpleNamespace())
+    [adapter] = plugin_registry.registered()
+    assert isinstance(adapter, DramatiqAdapter)
+    await adapter.startup(types.SimpleNamespace(redis_url=SecretStr("redis://settings")))
+    try:
+        assert adapter.broker_url == "redis://settings"
+    finally:
+        await adapter.shutdown()
+
+
 def test_plugin_reads_redis_url(stub_broker: dict[str, StubBroker]) -> None:
     plugin(types.SimpleNamespace(redis_url="redis://h:1234/0"))
     [adapter] = plugin_registry.registered()
@@ -177,3 +235,94 @@ def test_plugin_unwraps_secret_url(stub_broker: dict[str, StubBroker]) -> None:
     [adapter] = plugin_registry.registered()
     assert isinstance(adapter, DramatiqAdapter)
     assert adapter.broker_url == "redis://h"
+
+
+def test_bootstrap_imports_app_tasks_and_returns_broker(
+    tmp_path: Any,
+    monkeypatch: pytest.MonkeyPatch,
+    stub_broker: dict[str, StubBroker],
+) -> None:
+    pkg = tmp_path / "demoapp"
+    pkg.mkdir()
+    (pkg / "__init__.py").write_text("app = object()\n", encoding="utf-8")
+    (pkg / "tasks.py").write_text(
+        "\n".join(
+            [
+                "from causeway import cron, task",
+                "",
+                "@task()",
+                "async def send_email():",
+                "    pass",
+                "",
+                "@cron('*/10 * * * *')",
+                "async def sweep():",
+                "    pass",
+                "",
+            ],
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.syspath_prepend(str(tmp_path))
+
+    from causeway_tasks_dramatiq.runtime import bootstrap
+
+    try:
+        broker = bootstrap(app_target="demoapp:app", task_modules=("demoapp.tasks",))
+        assert broker is stub_broker["broker"]
+        [adapter] = [
+            candidate
+            for candidate in plugin_registry.registered()
+            if isinstance(candidate, DramatiqAdapter)
+        ]
+        assert "demoapp.tasks.send_email" in adapter._actors
+        periodic = adapter._actors["demoapp.tasks.sweep"].options["periodic"]
+        assert str(periodic) == "*/10 * * * *"
+    finally:
+        asyncio.run(plugin_registry.shutdown_all())
+
+
+def test_worker_cli_sets_bootstrap_env_and_dramatiq_args(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("CAUSEWAY_DRAMATIQ_APP", raising=False)
+    monkeypatch.delenv("CAUSEWAY_DRAMATIQ_TASKS", raising=False)
+    monkeypatch.delenv("CAUSEWAY_DRAMATIQ_IMPORTS", raising=False)
+    captured: dict[str, list[str]] = {}
+
+    def fake_run(args: list[str]) -> None:
+        captured["args"] = args
+
+    monkeypatch.setattr("causeway_tasks_dramatiq.cli._run_dramatiq", fake_run)
+    runner = CliRunner()
+    result = runner.invoke(
+        cli,
+        [
+            "worker",
+            "--app",
+            "demoapp:app",
+            "--tasks",
+            "demoapp.tasks,other.tasks",
+            "--import",
+            "demoapp.listeners",
+            "--processes",
+            "2",
+            "--threads",
+            "4",
+            "--queue",
+            "emails",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert captured["args"] == [
+        "--processes",
+        "2",
+        "--threads",
+        "4",
+        "--queues",
+        "emails",
+        "causeway_tasks_dramatiq.worker:broker",
+    ]
+    assert os.environ["CAUSEWAY_DRAMATIQ_APP"] == "demoapp:app"
+    assert os.environ["CAUSEWAY_DRAMATIQ_TASKS"] == "demoapp.tasks,other.tasks"
+    assert os.environ["CAUSEWAY_DRAMATIQ_IMPORTS"] == "demoapp.listeners"

@@ -1,6 +1,6 @@
 {
   "name": "@causewayjs/client",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.3",
   "description": "Route-key Causeway client runtime with owned cache, mutations, refreshes, and hydration.",
   "keywords": [
     "python",

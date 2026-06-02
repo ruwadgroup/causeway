@@ -67,6 +67,18 @@ from causeway_tasks_dramatiq import DramatiqAdapter
 register(DramatiqAdapter(broker_url="redis://localhost"))
 ```
 
+When using Dramatiq locally, run the API, worker, and cron scheduler as
+separate processes:
+
+```bash
+causeway dev
+causeway-dramatiq worker --app app:app --tasks app.tasks
+causeway-dramatiq scheduler --app app:app --tasks app.tasks
+```
+
+The worker consumes regular task queues. The scheduler emits `@cron` jobs via
+Periodiq, so it must run alongside the worker.
+
 Swap to Celery in one line:
 
 ```python
