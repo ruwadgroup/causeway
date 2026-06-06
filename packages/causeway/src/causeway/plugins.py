@@ -27,7 +27,7 @@ _started = False
 _discovered_groups: set[str] = set()
 # Contract versions accepted without warning. Old versions stay on the list
 # until ecosystem adapters have caught up.
-_ACCEPTED_CONTRACT_VERSIONS = frozenset({"v1.0", "v1.1"})
+_ACCEPTED_CONTRACT_VERSIONS = frozenset({"v1.0", "v1.1", "v2.0"})
 
 
 def register(adapter: Plugin) -> None:

@@ -46,6 +46,20 @@ async def test_create_app_includes_health_and_diagnostics(tmp_path: Path) -> Non
         assert (await client.get("/__causeway")).status_code == 200
 
 
+async def test_create_app_health_false_omits_probes(tmp_path: Path) -> None:
+    routes = tmp_path / "routes"
+    _write(
+        routes,
+        "index.py",
+        "from causeway import get\n@get\nasync def r() -> dict: return {}\n",
+    )
+    app = create_app(routes, health=False)
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://t") as client:
+        assert (await client.get("/healthz")).status_code == 404
+        assert (await client.get("/")).status_code == 200
+
+
 async def test_create_app_exposes_dev_graph(tmp_path: Path) -> None:
     routes = tmp_path / "routes"
     _write(

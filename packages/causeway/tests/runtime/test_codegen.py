@@ -199,9 +199,10 @@ def test_render_emits_configurable_api_factory_for_ssr() -> None:
     assert "return createRouteClient({ ...options, routeMeta, loadRoute })" in files["index.ts"]
     assert "export const client = createClient()" in files["index.ts"]
     assert "export const routeMeta: ReadonlyArray<RouteMeta>" in out
+    assert 'import meta from "./meta.json"' in files["meta.ts"]
     assert "export async function loadRoute" in out
-    assert 'routeKey: "GET /users/$user_id"' in out
-    assert 'path: "/users/{user_id}"' in out
+    assert '"routeKey": "GET /users/$user_id"' in files["meta.json"]
+    assert '"path": "/users/{user_id}"' in files["meta.json"]
     assert "segments:" not in out
     assert "verb:" not in out
 
@@ -221,7 +222,7 @@ def test_render_emits_route_key_types_and_metadata() -> None:
 
     files = render(build_ir(app))
     types = files["types.d.ts"]
-    meta = files["meta.ts"]
+    meta_json = files["meta.json"]
     assert 'export type QueryRouteKey = "GET /customers/$id";' in types
     assert 'export type MutationRouteKey = "POST /customers/$id/screen";' in types
     assert '"GET /customers/$id": {' in types
@@ -230,8 +231,10 @@ def test_render_emits_route_key_types_and_metadata() -> None:
     assert 'declare module "@causewayjs/client"' in types
     assert "queryRouteKey: QueryRouteKey" in types
     assert "routeData: { [K in RouteKey]: RouteData<K> }" in types
-    assert 'routeKey: "POST /customers/$id/screen"' in meta
-    assert 'refreshes: ["GET /customers/$id", "GET /customers"]' in meta
+    assert '"routeKey": "POST /customers/$id/screen"' in meta_json
+    assert '"refreshes": [' in meta_json
+    assert '"GET /customers/$id"' in meta_json
+    assert '"GET /customers"' in meta_json
 
 
 def test_load_route_emits_one_import_per_chunk_not_per_route() -> None:
@@ -789,11 +792,11 @@ def test_duplicate_route_names_are_path_qualified() -> None:
     out = _render_text(app)
     assert '"GET /accounts/$id": {' in out
     assert '"GET /customers/$id": {' in out
-    assert 'id: "accountsIdShow"' in out
-    assert 'id: "customersIdShow"' in out
+    assert '"id": "accountsIdShow"' in out
+    assert '"id": "customersIdShow"' in out
     assert "segments:" not in out
     assert "verb:" not in out
-    assert 'id: "show"' not in out
+    assert '"id": "show"' not in out
 
 
 def test_enum_literals_do_not_emit_runtime_values() -> None:
