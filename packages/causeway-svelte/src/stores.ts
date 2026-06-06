@@ -1,6 +1,7 @@
 import { readable, writable } from "svelte/store";
 import type { Readable, Writable } from "svelte/store";
 
+import { normalizeError } from "@causewayjs/client";
 import type {
   CallOptions,
   CausewayClient,
@@ -18,16 +19,17 @@ export interface QueryStoreOptions {
 }
 
 export interface QueryStoreValue<TData, TError> {
-  status: "idle" | "loading" | "success" | "error";
   data: TData | undefined;
   error: TError | undefined;
-  refetch: (opts?: CallOptions) => void;
+  pending: boolean;
+  refresh: (opts?: CallOptions) => void;
+  setData: (value: TData | ((prev: TData | undefined) => TData)) => void;
 }
 
 export interface MutationStoreValue<TData, TError, TVars extends RouteInputValue> {
-  status: "idle" | "loading" | "success" | "error";
   data: TData | undefined;
   error: TError | undefined;
+  pending: boolean;
   mutate: (vars: TVars, opts?: CallOptions) => Promise<TData>;
   reset: () => void;
 }
@@ -106,27 +108,35 @@ export function createCausewayStores(client: CausewayClient): CausewayStores {
     const inner: Writable<V> = writable({
       data: undefined,
       error: undefined,
-      refetch: (opts?: CallOptions) => run(opts),
-      status: enabled ? "loading" : "idle",
+      pending: enabled,
+      refresh: (opts?: CallOptions) => run(opts),
+      setData: (value) =>
+        inner.update((s) => ({
+          ...s,
+          data:
+            typeof value === "function"
+              ? (value as (p: TData | undefined) => TData)(s.data)
+              : value,
+        })),
     });
 
     function run(opts: CallOptions = {}) {
       controller?.abort();
       controller = new AbortController();
-      inner.update((s) => ({ ...s, error: undefined, status: "loading" }));
+      inner.update((s) => ({ ...s, error: undefined, pending: true }));
       void (async () => {
         try {
           const data = await client.query<TData>(routeKey, toInput(input), {
             ...opts,
             signal: opts.signal ?? controller?.signal,
           });
-          inner.update((s) => ({ ...s, data, error: undefined, status: "success" }));
+          inner.update((s) => ({ ...s, data, error: undefined, pending: false }));
         } catch (error) {
           if (isAbortError(error)) return;
           inner.update((s) => ({
             ...s,
-            error: error as TError,
-            status: "error",
+            error: normalizeError(error) as TError,
+            pending: false,
           }));
         }
       })();
@@ -155,30 +165,27 @@ export function createCausewayStores(client: CausewayClient): CausewayStores {
     const inner: Writable<V> = writable({
       data: undefined,
       error: undefined,
+      pending: false,
       mutate: async (vars: TVars, opts: CallOptions = {}) => {
-        inner.update((s) => ({ ...s, error: undefined, status: "loading" }));
+        inner.update((s) => ({ ...s, error: undefined, pending: true }));
         try {
           const data = await client.mutate<TData>(routeKey, toInput(vars), opts);
-          inner.update((s) => ({ ...s, data, status: "success" }));
+          inner.update((s) => ({ ...s, data, pending: false }));
           return data;
         } catch (error) {
-          inner.update((s) => ({
-            ...s,
-            error: error as TError,
-            status: "error",
-          }));
-          throw error;
+          const typed = normalizeError(error) as TError;
+          inner.update((s) => ({ ...s, error: typed, pending: false }));
+          throw typed;
         }
       },
       reset: () =>
         inner.set({
-          status: "idle",
           data: undefined,
           error: undefined,
+          pending: false,
           mutate: getStore().mutate,
           reset: getStore().reset,
         }),
-      status: "idle",
     });
     let captured: V;
     inner.subscribe((v) => (captured = v));
@@ -234,7 +241,7 @@ export function createCausewayStores(client: CausewayClient): CausewayStores {
             set({ error: undefined, status: "closed" });
           } catch (error) {
             if (controller.signal.aborted) return;
-            set({ error: error as TError, status: "error" });
+            set({ error: normalizeError(error) as TError, status: "error" });
           }
         })();
         return () => controller.abort();

@@ -1,6 +1,7 @@
 import { createEffect, createResource, createSignal, onCleanup } from "solid-js";
-import type { Accessor, ResourceReturn } from "solid-js";
+import type { Accessor } from "solid-js";
 
+import { normalizeError } from "@causewayjs/client";
 import type {
   CallOptions,
   CausewayClient,
@@ -16,14 +17,18 @@ import type {
 type InputSource<TInput extends RouteInputValue> = TInput | Accessor<TInput>;
 type QuerySource<TInput extends RouteInputValue> = { input: TInput };
 
-export type QueryResource<TData, TError> = ResourceReturn<TData> & {
+export interface QueryResource<TData, TError> {
+  data: Accessor<TData | undefined>;
   error: Accessor<TError | undefined>;
-};
+  pending: Accessor<boolean>;
+  refresh: () => Promise<TData | undefined>;
+  setData: (value: TData | ((prev: TData | undefined) => TData)) => void;
+}
 
 export interface MutationResource<TData, TError, TVars extends RouteInputValue> {
   data: Accessor<TData | undefined>;
   error: Accessor<TError | undefined>;
-  loading: Accessor<boolean>;
+  pending: Accessor<boolean>;
   mutate: (vars: TVars, opts?: CallOptions) => Promise<TData>;
   reset: () => void;
 }
@@ -84,20 +89,28 @@ export function createCausewayResources(client: CausewayClient): CausewayResourc
     TInput extends RouteInputValue = RouteInputValue,
   >(routeKey: string, input?: InputSource<TInput>) {
     const [errorSignal, setError] = createSignal<TError | undefined>(undefined);
-    const resource = createResource<TData, QuerySource<TInput>>(
+    const [data, { mutate, refetch }] = createResource<TData, QuerySource<TInput>>(
       () => ({ input: readInput(input) }),
       async ({ input: vars }) => {
         try {
-          const data = await client.query<TData>(routeKey, toInput(vars));
+          const result = await client.query<TData>(routeKey, toInput(vars));
           setError(() => undefined);
-          return data;
+          return result;
         } catch (error) {
-          setError(() => error as TError);
+          setError(() => normalizeError(error) as TError);
           throw error;
         }
       },
     );
-    return Object.assign(resource, { error: errorSignal }) as QueryResource<TData, TError>;
+    return {
+      data: () => data(),
+      error: errorSignal,
+      pending: () => data.loading,
+      refresh: () => Promise.resolve(refetch()),
+      setData: (value) => {
+        mutate(value as Parameters<typeof mutate>[0]);
+      },
+    } as QueryResource<TData, TError>;
   }
 
   function mutation<K extends RegisteredMutationRouteKey>(
@@ -115,30 +128,31 @@ export function createCausewayResources(client: CausewayClient): CausewayResourc
   >(routeKey: string) {
     const [data, setData] = createSignal<TData | undefined>(undefined);
     const [errorSignal, setError] = createSignal<TError | undefined>(undefined);
-    const [loading, setLoading] = createSignal(false);
+    const [pending, setPending] = createSignal(false);
 
     async function mutate(vars: TVars, opts: CallOptions = {}): Promise<TData> {
-      setLoading(true);
+      setPending(true);
       setError(() => undefined);
       try {
         const result = await client.mutate<TData>(routeKey, toInput(vars), opts);
         setData(() => result);
         return result;
       } catch (error) {
-        setError(() => error as TError);
-        throw error;
+        const typed = normalizeError(error) as TError;
+        setError(() => typed);
+        throw typed;
       } finally {
-        setLoading(false);
+        setPending(false);
       }
     }
 
     function reset() {
       setData(() => undefined);
       setError(() => undefined);
-      setLoading(false);
+      setPending(false);
     }
 
-    return { data, error: errorSignal, loading, mutate, reset };
+    return { data, error: errorSignal, pending, mutate, reset };
   }
 
   function subscription<K extends RegisteredQueryRouteKey>(
@@ -184,7 +198,7 @@ export function createCausewayResources(client: CausewayClient): CausewayResourc
           setStatus("closed");
         } catch (error) {
           if (controller.signal.aborted) return;
-          setError(() => error as TError);
+          setError(() => normalizeError(error) as TError);
           setStatus("error");
         }
       })();

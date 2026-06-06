@@ -1,7 +1,15 @@
-import { Fragment, createElement, useLayoutEffect, useMemo, useRef } from "react";
+"use client";
+
+import { Fragment, createElement, useEffect, useLayoutEffect, useRef } from "react";
 import type { ReactNode } from "react";
 
-import type { CausewayClient, DehydratedClient } from "@causewayjs/client";
+import { isWriteMethod } from "@causewayjs/client";
+import type {
+  CausewayClient,
+  ClientFactory,
+  DehydratedClient,
+  HeaderRecord,
+} from "@causewayjs/client";
 import {
   CausewayProvider,
   registerCausewayHydrationSnapshot,
@@ -9,11 +17,7 @@ import {
   type CausewayFeedback,
 } from "@causewayjs/react";
 
-export type ClientFactory<TClient = CausewayClient, TOptions extends object = object> = (
-  options?: TOptions,
-) => TClient;
-
-export type HeaderRecord = Record<string, string | null | undefined>;
+export type { ClientFactory, HeaderRecord };
 
 export type BrowserClientOptions<TOptions extends object> = Omit<TOptions, "fetch" | "headers"> & {
   baseUrl?: string;
@@ -30,6 +34,8 @@ export interface HydrateClientProps {
   children?: ReactNode;
 }
 
+const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+
 export function createHydrateClient<
   TFactory extends (options?: any) => any,
   TOptions extends object = Parameters<TFactory>[0] extends object
@@ -38,33 +44,33 @@ export function createHydrateClient<
 >(factory: TFactory, options?: TOptions) {
   return function HydrateClient({ children, feedback, snapshot, state }: HydrateClientProps) {
     const hydrationState = state ?? snapshot;
-    const hydrationKey = useMemo(() => snapshotKey(hydrationState), [hydrationState]);
+    const hydrationKey = snapshotKey(hydrationState);
     const parentClient = useOptionalCausewayClient();
-    const fallbackClient = useRef<unknown>(null);
-    const lastHydration = useRef<{ client: CausewayClient; key: string } | null>(null);
-    const lastNotification = useRef<{ client: CausewayClient; key: string } | null>(null);
-
+    const fallbackClient = useRef<CausewayClient | null>(null);
     if (parentClient === null && fallbackClient.current === null) {
-      fallbackClient.current = factory(options);
+      fallbackClient.current = factory(options) as CausewayClient;
     }
-
     const client = (parentClient ?? fallbackClient.current) as CausewayClient;
 
-    if (hydrationState != null && hydrationKey != null) {
-      const last = lastHydration.current;
-      if (last?.client !== client || last.key !== hydrationKey) {
-        client.hydrate(hydrationState, { notify: false });
-        lastHydration.current = { client, key: hydrationKey };
-      }
+    // Apply the snapshot during render so boundary children read server data on
+    // first render. Idempotent and keyed on the snapshot id, so re-renders
+    // (incl. StrictMode/concurrent) never re-apply the same snapshot. Subscribers
+    // already mounted are notified from the layout effect below.
+    const lastHydration = useRef<{ client: CausewayClient; key: string | null } | null>(null);
+    const last = lastHydration.current;
+    if (hydrationState != null && (last?.client !== client || last.key !== hydrationKey)) {
+      client.hydrate(hydrationState, { notify: false });
+      lastHydration.current = { client, key: hydrationKey };
     }
 
-    useLayoutEffect(() => {
-      if (hydrationState == null || hydrationKey == null) return;
-      const last = lastNotification.current;
-      if (last?.client === client && last.key === hydrationKey) return;
+    const lastNotified = useRef<{ client: CausewayClient; key: string | null } | null>(null);
+    useIsomorphicLayoutEffect(() => {
+      if (hydrationState == null) return;
+      const prev = lastNotified.current;
+      if (prev?.client === client && prev.key === hydrationKey) return;
       client.hydrate(hydrationState, { forceNotify: true });
       registerCausewayHydrationSnapshot(client, hydrationState);
-      lastNotification.current = { client, key: hydrationKey };
+      lastNotified.current = { client, key: hydrationKey };
     }, [client, hydrationKey, hydrationState]);
 
     if (parentClient !== null && feedback === undefined) {
@@ -95,10 +101,10 @@ export function createBrowserClient<TFactory extends (options?: any) => any>(
       const nextHeaders = new Headers(init?.headers);
       const configured = typeof headers === "function" ? headers() : headers;
       for (const [key, value] of Object.entries(configured ?? {})) {
-        if (value != null && !nextHeaders.has(key)) nextHeaders.set(key, value);
+        if (value == null || nextHeaders.has(key)) continue;
+        nextHeaders.set(key, typeof value === "string" ? value : value.join(", "));
       }
-      const method = (init?.method ?? "GET").toUpperCase();
-      if (idempotency && WRITE_METHODS.has(method) && !nextHeaders.has("Idempotency-Key")) {
+      if (idempotency && isWriteMethod(init?.method) && !nextHeaders.has("Idempotency-Key")) {
         nextHeaders.set("Idempotency-Key", crypto.randomUUID());
       }
       return fetchImpl(input, { ...init, credentials, headers: nextHeaders });
@@ -107,7 +113,6 @@ export function createBrowserClient<TFactory extends (options?: any) => any>(
 }
 
 function snapshotKey(snapshot: DehydratedClient | null | undefined): string | null {
-  return snapshot == null ? null : JSON.stringify(snapshot);
+  if (snapshot == null) return null;
+  return snapshot.id ?? JSON.stringify(snapshot);
 }
-
-const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);

@@ -1,14 +1,12 @@
-import { defineConfig } from "tsup";
+import { defineConfig } from "tsdown";
 
 export default defineConfig({
   entry: ["src/index.ts"],
   format: ["esm", "cjs"],
   dts: true,
-  splitting: false,
+  fixedExtension: false,
   sourcemap: true,
-  clean: true,
-  treeshake: true,
-  minify: false,
   target: "es2022",
-  external: ["@causewayjs/ts"],
+  clean: true,
+  external: ["react", "react-dom", "@causewayjs/client"],
 });

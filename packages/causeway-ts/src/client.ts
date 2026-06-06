@@ -140,18 +140,16 @@ export function createRouteKeyClient(config: ClientConfig): CausewayClient {
       return cacheKey(routeKey, input, scope);
     },
     dehydrate() {
-      return {
-        version: 1,
-        queries: [...entries.values()]
-          .filter((entry) => entry.state.data !== undefined)
-          .map((entry) => ({
-            routeKey: entry.routeKey,
-            input: entry.input,
-            scope: entry.scope,
-            data: entry.state.data,
-            updatedAt: entry.state.updatedAt ?? Date.now(),
-          })),
-      };
+      const queries = [...entries.values()]
+        .filter((entry) => entry.state.data !== undefined)
+        .map((entry) => ({
+          routeKey: entry.routeKey,
+          input: entry.input,
+          scope: entry.scope,
+          data: entry.state.data,
+          updatedAt: entry.state.updatedAt ?? Date.now(),
+        }));
+      return { version: 1, id: snapshotId(queries), queries };
     },
     hydrate(snapshot: DehydratedClient, options: HydrateOptions = {}) {
       if (snapshot.version !== 1) return;
@@ -326,6 +324,16 @@ function assertRouteKind(route: RouteMeta, kind: "query" | "mutation"): void {
 
 function cacheKey(routeKey: string, input: unknown, scope: unknown): string {
   return stableStringify([routeKey, input ?? {}, scope ?? null]);
+}
+
+// Signature over route key + input + updatedAt, excluding the (large) data payload.
+function snapshotId(
+  queries: ReadonlyArray<{ routeKey: string; input: unknown; updatedAt: number }>,
+): string {
+  if (queries.length === 0) return "0";
+  let sig = String(queries.length);
+  for (const q of queries) sig += `|${q.routeKey}#${stableStringify(q.input)}@${q.updatedAt}`;
+  return sig;
 }
 
 function notify(listeners: Map<string, Set<() => void>>, key: string): void {

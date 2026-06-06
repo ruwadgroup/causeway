@@ -135,7 +135,7 @@ describe("query store", () => {
     await wait();
     await wait();
     const val = get(store);
-    expect(val.status).toBe("success");
+    expect(val.pending).toBe(false);
     expect(val.data).toEqual({ id: 1, title: "hi" });
     expect(val.error).toBeUndefined();
   });
@@ -157,7 +157,7 @@ describe("query store", () => {
     await wait();
     await wait();
     const val = get(store);
-    expect(val.status).toBe("error");
+    expect(val.pending).toBe(false);
     expect(val.error).toBeInstanceOf(CausewayError);
     expect(val.error).toMatchObject({ issueId: 99, kind: "IssueNotFound" });
   });
@@ -188,7 +188,7 @@ describe("mutation store", () => {
 
     const out = await get(store).mutate({ data: { title: "new" } });
     expect(out).toEqual({ id: 5, title: "new" });
-    expect(get(store).status).toBe("success");
+    expect(get(store).pending).toBe(false);
   });
 });
 

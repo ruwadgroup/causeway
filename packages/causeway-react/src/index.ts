@@ -1,3 +1,5 @@
+"use client";
+
 export {
   CausewayProvider,
   registerCausewayHydrationSnapshot,
@@ -5,6 +7,7 @@ export {
   useOptionalCausewayClient,
   useMutation,
   useQuery,
+  useSubscription,
   type CausewayFeedback,
   type CausewayProviderProps,
   type MutationFeedback,
@@ -12,6 +15,9 @@ export {
   type MutationHookResult,
   type QueryHookOptions,
   type QueryHookResult,
+  type SubscriptionHookOptions,
+  type SubscriptionHookResult,
+  type SubscriptionStatus,
 } from "./route-hooks.js";
 
 export { queryOptions } from "@causewayjs/client";

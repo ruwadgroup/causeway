@@ -83,6 +83,8 @@ export interface DehydratedQuery {
 
 export interface DehydratedClient {
   version: 1;
+  /** Content signature; framework bindings key hydration on this. Always set by `dehydrate()`. */
+  id?: string;
   queries: DehydratedQuery[];
 }
 
@@ -229,6 +231,11 @@ export function unwrapResult(value: unknown): unknown {
 
 /** @internal — exported so generated clients can build errors with the same logic. */
 export function buildError(raw: unknown): CausewayError {
+  return toCausewayError(raw);
+}
+
+/** Normalize any thrown value into a `CausewayError` (bare network `TypeError`s included). */
+export function normalizeError(raw: unknown): CausewayError {
   return toCausewayError(raw);
 }
 

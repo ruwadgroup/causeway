@@ -12,6 +12,7 @@ import {
 } from "react";
 import type { ReactElement, ReactNode } from "react";
 
+import { normalizeError } from "@causewayjs/client";
 import type {
   CallOptions,
   CausewayClient,
@@ -26,6 +27,8 @@ import type {
   RouteInputValue,
   UnregisteredRouteKey,
 } from "@causewayjs/client";
+
+export type SubscriptionStatus = "idle" | "connecting" | "open" | "closed" | "error";
 
 export interface CausewayFeedback {
   loading?: (message: string, id: string) => unknown;
@@ -78,11 +81,21 @@ export type MutationHookResult<
   TData = unknown,
   TError = unknown,
 > = ((vars: TVars, opts?: CallOptions) => Promise<TData>) & {
+  mutate: (vars: TVars, opts?: CallOptions) => Promise<TData>;
   pending: boolean;
   error: TError | null;
   data: TData | undefined;
   reset: () => void;
 };
+
+export interface SubscriptionHookOptions {
+  enabled?: boolean;
+}
+
+export interface SubscriptionHookResult<TError = unknown> {
+  status: SubscriptionStatus;
+  error: TError | null;
+}
 
 const CausewayContext = createContext<ProviderValue | null>(null);
 
@@ -160,11 +173,11 @@ export function useQuery<TData = unknown, TError = unknown>(
     getSnapshot,
     getSnapshot,
   );
-  const mountedKeys = useRef(new Set<string>());
-  const hideDataKeys = useRef(new Set<string>());
+  const mountedKeyRef = useRef<string | null>(null);
+  const hideDataKeyRef = useRef<string | null>(null);
   const shouldRefreshOnMount =
     options.enabled !== false &&
-    !mountedKeys.current.has(stableKey) &&
+    mountedKeyRef.current !== stableKey &&
     (options.refetchOnMount === undefined ||
       options.refetchOnMount === true ||
       (options.refetchOnMount === "stale" && isStale(state.updatedAt, options.staleTime)) ||
@@ -173,7 +186,7 @@ export function useQuery<TData = unknown, TError = unknown>(
     options.keepPreviousData !== true &&
     state.data === undefined &&
     state.error === null &&
-    (shouldRefreshOnMount || (state.pending && hideDataKeys.current.has(stableKey)));
+    (shouldRefreshOnMount || (state.pending && hideDataKeyRef.current === stableKey));
   const data = hideStaleData ? undefined : state.data;
   const pending = state.pending || (shouldRefreshOnMount && state.error === null);
 
@@ -193,12 +206,14 @@ export function useQuery<TData = unknown, TError = unknown>(
       signal: controller.signal,
       ...(shouldRefresh && options.keepPreviousData !== true ? { cache: "no-store" } : {}),
     };
-    if (shouldRefresh && options.keepPreviousData !== true) hideDataKeys.current.add(stableKey);
+    if (shouldRefresh && options.keepPreviousData !== true) hideDataKeyRef.current = stableKey;
     void request
       .call(client, routeKey, input, requestOptions)
-      .finally(() => hideDataKeys.current.delete(stableKey))
+      .finally(() => {
+        if (hideDataKeyRef.current === stableKey) hideDataKeyRef.current = null;
+      })
       .catch(() => {});
-    mountedKeys.current.add(stableKey);
+    mountedKeyRef.current = stableKey;
     return () => controller.abort();
   }, [
     client,
@@ -372,14 +387,14 @@ export function useMutation<
         }
         return data;
       } catch (error) {
-        const typed = error as TError;
+        const typed = normalizeError(error) as TError;
         setState((current) => ({ ...current, pending: false, error: typed }));
         const message =
           typeof options.feedback?.error === "function"
             ? options.feedback.error(typed)
             : options.feedback?.error;
         if (message) value.feedback?.error?.(message, feedbackId.current);
-        throw error;
+        throw typed;
       }
     },
     [value, routeKey, options.feedback],
@@ -390,9 +405,72 @@ export function useMutation<
   }, []);
 
   return Object.assign(run, {
+    mutate: run,
     pending: state.pending,
     error: state.error,
     data: state.data,
     reset,
   });
+}
+
+export function useSubscription<K extends RegisteredQueryRouteKey>(
+  routeKey: K,
+  input: RegisteredRouteInput<K>,
+  onEvent: (event: RegisteredRouteData<K>) => void,
+  options?: SubscriptionHookOptions,
+): SubscriptionHookResult<RegisteredRouteError<K>>;
+export function useSubscription<
+  TEvent = unknown,
+  TError = unknown,
+  TInput extends RouteInputValue = RouteInputValue,
+>(
+  routeKey: UnregisteredRouteKey,
+  input: TInput,
+  onEvent: (event: TEvent) => void,
+  options?: SubscriptionHookOptions,
+): SubscriptionHookResult<TError>;
+export function useSubscription<TEvent = unknown, TError = unknown>(
+  routeKey: string,
+  input: RouteInputValue,
+  onEvent: (event: TEvent) => void,
+  options: SubscriptionHookOptions = {},
+): SubscriptionHookResult<TError> {
+  const client = useCausewayClient();
+  const enabled = options.enabled !== false;
+  const stableKey = client.queryKey(routeKey, input);
+  const [state, setState] = useState<{ status: SubscriptionStatus; error: TError | null }>({
+    status: enabled ? "connecting" : "idle",
+    error: null,
+  });
+  const onEventRef = useRef(onEvent);
+  onEventRef.current = onEvent;
+
+  useEffect(() => {
+    if (!enabled) {
+      setState({ status: "idle", error: null });
+      return;
+    }
+    const controller = new AbortController();
+    setState({ status: "connecting", error: null });
+    void (async () => {
+      try {
+        setState({ status: "open", error: null });
+        for await (const ev of client.stream<TEvent>(routeKey, input, {
+          signal: controller.signal,
+        })) {
+          if (controller.signal.aborted) return;
+          onEventRef.current(ev);
+        }
+        if (controller.signal.aborted) return;
+        setState({ status: "closed", error: null });
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        setState({ status: "error", error: normalizeError(error) as TError });
+      }
+    })();
+    return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [client, routeKey, stableKey, enabled]);
+
+  return state;
 }

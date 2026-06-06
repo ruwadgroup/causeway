@@ -75,8 +75,8 @@ function wait(): Promise<void> {
 describe("query resource", () => {
   function TypeProbe() {
     const resources = createCausewayResources(createTestClient(fetch));
-    const [issue] = resources.query("GET /issues/$issue_id", () => ({ issueId: 1 }));
-    issue()?.title.toUpperCase();
+    const issue = resources.query("GET /issues/$issue_id", () => ({ issueId: 1 }));
+    issue.data()?.title.toUpperCase();
 
     const create = resources.mutation("POST /issues");
     void create.mutate({ data: { title: "new" } }).then((data) => data.id.toFixed());
@@ -103,14 +103,14 @@ describe("query resource", () => {
     );
     await createRoot(async (dispose) => {
       const resources = createCausewayResources(createTestClient(fetch));
-      const [data, { refetch }] = resources.query("GET /issues/$issue_id", () => ({
+      const q = resources.query("GET /issues/$issue_id", () => ({
         issueId: 1,
       }));
 
       await wait();
       await wait();
-      await refetch();
-      expect(data()).toEqual({ id: 1, title: "hi" });
+      await q.refresh();
+      expect(q.data()).toEqual({ id: 1, title: "hi" });
       dispose();
     });
   });
@@ -131,9 +131,8 @@ describe("query resource", () => {
       const r = resources.query("GET /issues/$issue_id", () => ({
         issueId: 99,
       }));
-      const [, { refetch }] = r;
 
-      refetch();
+      void r.refresh();
       await wait();
       await wait();
       expect(r.error()).toMatchObject({ issueId: 99, kind: "IssueNotFound" });
@@ -157,7 +156,7 @@ describe("mutation resource", () => {
 
       expect(result).toEqual({ id: 7, title: "new" });
       expect(m.data()).toEqual({ id: 7, title: "new" });
-      expect(m.loading()).toBe(false);
+      expect(m.pending()).toBe(false);
       dispose();
     });
   });
