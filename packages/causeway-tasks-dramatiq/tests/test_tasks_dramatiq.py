@@ -9,19 +9,19 @@ import types
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-import dramatiq
-import pytest
-from dramatiq.brokers.stub import StubBroker
-from pydantic import SecretStr
-import typer
-from typer.testing import CliRunner
-
 import causeway.plugins as plugin_registry
-from causeway.tasks import TaskRef, _clear as clear_tasks, cron, task
 import causeway_tasks_dramatiq.cli as cli_module
 import causeway_tasks_dramatiq.runtime as runtime_module
+import dramatiq
+import pytest
+import typer
+from causeway.tasks import TaskRef, cron, task
+from causeway.tasks import _clear as clear_tasks
 from causeway_tasks_dramatiq import DramatiqAdapter, plugin
 from causeway_tasks_dramatiq.cli import cli
+from dramatiq.brokers.stub import StubBroker
+from pydantic import SecretStr
+from typer.testing import CliRunner
 
 
 @pytest.fixture(autouse=True)
@@ -189,7 +189,9 @@ async def test_existing_broker_actor_is_reused(
         def existing() -> None:
             pass
 
-        ref = TaskRef(module="tests", name="existing", fn=lambda: None)
+        async def _existing_fn() -> None: ...
+
+        ref = TaskRef(module="tests", name="existing", fn=_existing_fn)
         actor = adapter._actor_for(ref)
 
         assert actor is existing
@@ -256,19 +258,54 @@ async def test_status_returns_pending(stub_broker: dict[str, StubBroker]) -> Non
     assert state.state == "pending"
 
 
-async def test_result_raises_not_implemented(
+async def test_result_unknown_task_raises_keyerror(
     stub_broker: dict[str, StubBroker],
 ) -> None:
     adapter = DramatiqAdapter(broker_url="redis://x")
-    with pytest.raises(NotImplementedError, match="Results middleware"):
+    with pytest.raises(KeyError, match="unknown task"):
         await adapter.result("any-id")
 
 
-async def test_cancel_raises_not_implemented() -> None:
+async def test_cancel_without_redis_client_returns_false() -> None:
+    # No broker/client wired up, so there is nowhere to record the cancel flag.
     adapter = DramatiqAdapter(broker_url="redis://x")
+    assert await adapter.cancel("any-id") is False
 
-    with pytest.raises(NotImplementedError, match="does not implement cancel"):
-        await adapter.cancel("any-id")
+
+class _FakeRedis:
+    def __init__(self) -> None:
+        self.store: dict[str, str] = {}
+
+    def exists(self, key: str) -> int:
+        return 1 if key in self.store else 0
+
+    def get(self, key: str) -> str | None:
+        return self.store.get(key)
+
+    def setex(self, key: str, ttl: int, value: str) -> None:
+        del ttl
+        self.store[key] = value
+
+
+async def test_state_status_result_cancel_roundtrip(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    adapter = DramatiqAdapter(broker_url="redis://x")
+    fake = _FakeRedis()
+    monkeypatch.setattr(adapter, "_client", lambda: fake)
+
+    adapter._set_state_sync("t1", "running")
+    assert (await adapter.status("t1")).state == "running"
+
+    adapter._set_state_sync("t1", "complete", result={"ok": True})
+    assert await adapter.result("t1") == {"ok": True}
+    # Cancelling an already-finished task is a no-op.
+    assert await adapter.cancel("t1") is False
+
+    adapter._set_state_sync("t2", "running")
+    assert await adapter.cancel("t2") is True
+    assert adapter._cancel_requested_sync("t2") is True
+    assert (await adapter.status("t2")).state == "cancelled"
 
 
 def test_plugin_defaults_to_localhost(stub_broker: dict[str, StubBroker]) -> None:

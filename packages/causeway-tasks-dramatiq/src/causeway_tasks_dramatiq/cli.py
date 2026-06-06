@@ -124,7 +124,9 @@ def _configure_env(
     )
 
 
-def _normalize_modules(values: list[str] | None, *, default: tuple[str, ...]) -> tuple[str, ...]:
+def _normalize_modules(
+    values: list[str] | None, *, default: tuple[str, ...]
+) -> tuple[str, ...]:
     raw = values if values else list(default)
     modules: list[str] = []
     for value in raw:

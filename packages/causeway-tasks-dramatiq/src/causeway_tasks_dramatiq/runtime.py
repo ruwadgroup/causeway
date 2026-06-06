@@ -7,7 +7,7 @@ import importlib
 import os
 from collections.abc import Iterable
 
-from dramatiq.brokers.redis import RedisBroker
+from dramatiq.broker import Broker
 
 from causeway.config import load_settings
 from causeway.plugins import register, registered, startup_all
@@ -23,15 +23,19 @@ def bootstrap(
     app_target: str | None = None,
     task_modules: Iterable[str] | None = None,
     import_modules: Iterable[str] | None = None,
-) -> RedisBroker:
+) -> Broker:
     """Load a Causeway app and return the configured Dramatiq broker.
 
     Importing ``app_target`` discovers Causeway plugins by convention. We then
     import task modules so ``@task`` / ``@cron`` decorators run, start plugins
     with app settings, and return the broker that Dramatiq/Periodiq expect.
     """
-    target = app_target or os.environ.get("CAUSEWAY_DRAMATIQ_APP") or _DEFAULT_APP_TARGET
-    tasks = tuple(task_modules or _env_list("CAUSEWAY_DRAMATIQ_TASKS", _DEFAULT_TASK_MODULES))
+    target = (
+        app_target or os.environ.get("CAUSEWAY_DRAMATIQ_APP") or _DEFAULT_APP_TARGET
+    )
+    tasks = tuple(
+        task_modules or _env_list("CAUSEWAY_DRAMATIQ_TASKS", _DEFAULT_TASK_MODULES)
+    )
     imports = tuple(import_modules or _env_list("CAUSEWAY_DRAMATIQ_IMPORTS", ()))
 
     app_module, app_attr = _split_target(target)
