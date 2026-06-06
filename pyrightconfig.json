@@ -46,5 +46,91 @@
   "reportUnknownVariableType": "none",
   "reportUnknownMemberType": "none",
   "reportUnknownArgumentType": "none",
-  "reportUnknownParameterType": "none"
+  "reportUnknownParameterType": "none",
+  "executionEnvironments": [
+    {
+      "root": "packages/causeway-auth-jwt",
+      "extraPaths": [
+        "packages/causeway-auth-jwt/.venv/lib/python3.13/site-packages",
+        "packages/causeway/src"
+      ]
+    },
+    {
+      "root": "packages/causeway-cache-redis",
+      "extraPaths": [
+        "packages/causeway-cache-redis/.venv/lib/python3.13/site-packages",
+        "packages/causeway/src"
+      ]
+    },
+    {
+      "root": "packages/causeway-db-sqlmodel",
+      "extraPaths": [
+        "packages/causeway-db-sqlmodel/.venv/lib/python3.13/site-packages",
+        "packages/causeway/src"
+      ]
+    },
+    {
+      "root": "packages/causeway-deploy-docker",
+      "extraPaths": [
+        "packages/causeway-deploy-docker/.venv/lib/python3.13/site-packages",
+        "packages/causeway/src"
+      ]
+    },
+    {
+      "root": "packages/causeway-deploy-fly",
+      "extraPaths": [
+        "packages/causeway-deploy-fly/.venv/lib/python3.13/site-packages",
+        "packages/causeway/src"
+      ]
+    },
+    {
+      "root": "packages/causeway-deploy-modal",
+      "extraPaths": [
+        "packages/causeway-deploy-modal/.venv/lib/python3.13/site-packages",
+        "packages/causeway/src"
+      ]
+    },
+    {
+      "root": "packages/causeway-flags-growthbook",
+      "extraPaths": [
+        "packages/causeway-flags-growthbook/.venv/lib/python3.13/site-packages",
+        "packages/causeway/src"
+      ]
+    },
+    {
+      "root": "packages/causeway-mailer-smtp",
+      "extraPaths": [
+        "packages/causeway-mailer-smtp/.venv/lib/python3.13/site-packages",
+        "packages/causeway/src"
+      ]
+    },
+    {
+      "root": "packages/causeway-observe-sentry",
+      "extraPaths": [
+        "packages/causeway-observe-sentry/.venv/lib/python3.13/site-packages",
+        "packages/causeway/src"
+      ]
+    },
+    {
+      "root": "packages/causeway-storage-fs",
+      "extraPaths": [
+        "packages/causeway-storage-fs/.venv/lib/python3.13/site-packages",
+        "packages/causeway/src"
+      ]
+    },
+    {
+      "root": "packages/causeway-storage-s3",
+      "extraPaths": [
+        "packages/causeway-storage-s3/.venv/lib/python3.13/site-packages",
+        "packages/causeway/src"
+      ]
+    },
+    {
+      "root": "packages/causeway-tasks-dramatiq",
+      "extraPaths": [
+        "packages/causeway-tasks-dramatiq/.venv/lib/python3.13/site-packages",
+        "packages/causeway/src"
+      ]
+    }
+  ]
 }
