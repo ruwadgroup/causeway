@@ -87,7 +87,9 @@ Builds the App Graph from the runtime app: routes, route keys, HTTP paths, sourc
 
 Every official contract as a `typing.Protocol`. `Plugin`, `TaskAdapter`, `EventBus`, `Storage`, `KV`, `Mailer`, `AuthProvider`, `DBSession`, `BlobScanner`, `FeatureFlags`, `MetricsSink`, `LogSink`, `PubSub`, `RateLimiter`, `SessionStore`, `DeployTarget`. Each contract declares `contract_version: ClassVar[str] = "v1.0"`.
 
-If you're adding a new official contract, **start here**. Then add a reference adapter in `adapters.py` (or punt to a sibling package), and a test that round-trips against the protocol.
+If you're adding a new official contract, **start here**. Then add a reference
+adapter in `adapters.py` or an optional adapter under `contrib/`, plus a test
+that round-trips against the protocol.
 
 ### `plugins.py` — 235 lines
 

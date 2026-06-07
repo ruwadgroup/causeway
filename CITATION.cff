@@ -6,8 +6,8 @@ authors:
   - family-names: "Bin Hakim"
     given-names: "Tamim"
     alias: "tamimbinhakim"
-url: "https://github.com/tamimbinhakim/causeway"
-repository-code: "https://github.com/tamimbinhakim/causeway"
+url: "https://github.com/ruwadgroup/causeway"
+repository-code: "https://github.com/ruwadgroup/causeway"
 license: MIT
 keywords:
   - python

@@ -77,6 +77,7 @@ def render(ir: AppIR) -> dict[str, str]:
         "index.ts": _render_index(state),
         "types.d.ts": _render_types_file(state),
         "meta.ts": _render_meta_file(state),
+        "meta.json": _render_meta_json(state),
     }
     files.update(_render_route_files(state))
     return files
@@ -146,17 +147,36 @@ def _render_index(state: _RenderState) -> str:
 
 
 def _render_meta_file(state: _RenderState) -> str:
-    lines = [
-        HEADER_BANNER,
-        'import type { RouteMeta } from "@causewayjs/ts";\n\n',
-        "export const routeMeta: ReadonlyArray<RouteMeta> = [\n",
-    ]
+    # Route metadata lives in meta.json (a data node) rather than a large TS
+    # array literal: bundlers (Turbopack especially) parse/invalidate JSON far
+    # more cheaply than thousands of lines of TS on every HMR cycle.
+    return (
+        HEADER_BANNER
+        + 'import type { RouteMeta } from "@causewayjs/ts";\n'
+        + 'import meta from "./meta.json";\n\n'
+        + "export const routeMeta: ReadonlyArray<RouteMeta> = meta as ReadonlyArray<RouteMeta>;\n"
+    )
+
+
+def _render_meta_json(state: _RenderState) -> str:
+    items: list[dict[str, object]] = []
     for i, route in enumerate(state.ir.routes):
-        lines.append(
-            _render_route_meta(route, state.route_names[i], indent="  ") + ",\n",
-        )
-    lines.append("];\n")
-    return "".join(lines)
+        item: dict[str, object] = {
+            "id": state.route_names[i],
+            "routeKey": route.route_key,
+            "method": route.method,
+            "path": route.path,
+        }
+        if route.refreshes:
+            item["refreshes"] = list(route.refreshes)
+        if route.scopes:
+            item["scopes"] = list(route.scopes)
+        if route.params:
+            item["hasArgs"] = True
+        if route.streams:
+            item["streams"] = True
+        items.append(item)
+    return json.dumps(items, indent=2) + "\n"
 
 
 def _render_route_files(state: _RenderState) -> dict[str, str]:
@@ -230,37 +250,6 @@ def _render_components(keys: list[str], ir: AppIR, name_map: dict[str, str]) -> 
         body = _render_type(schema, name_map, indent="")
         chunks.append(f"export type {ts_name} = {body};\n")
     return "\n".join(chunks)
-
-
-def _render_route_meta(
-    route: RouteIR,
-    route_name: str,
-    *,
-    indent: str,
-) -> str:
-    parts = [
-        f"id: {json.dumps(route_name)}",
-        f"routeKey: {json.dumps(route.route_key)}",
-        f"method: {json.dumps(route.method)}",
-        f"path: {json.dumps(route.path)}",
-    ]
-    if route.refreshes:
-        parts.append(f"refreshes: {json.dumps(list(route.refreshes))}")
-    if route.scopes:
-        parts.append(f"scopes: {json.dumps(list(route.scopes))}")
-    if route.params:
-        parts.append("hasArgs: true")
-    if route.streams:
-        parts.append("streams: true")
-    inline = indent + "{ " + ", ".join(parts) + " }"
-    if len(inline) <= _INLINE_LINE_BUDGET:
-        return inline
-    inner = indent + "  "
-    lines = [indent + "{"]
-    for p in parts:
-        lines.append(f"{inner}{p},")
-    lines.append(indent + "}")
-    return "\n".join(lines)
 
 
 def _route_chunk_names(ir: AppIR) -> dict[int, str]:
@@ -567,9 +556,6 @@ def write(ir: AppIR, out: Path) -> None:
         shutil.rmtree(backup, ignore_errors=True)
 
 
-# ---- type rendering ----
-
-
 def _render_type(
     schema: Any,
     name_map: dict[str, str] | None = None,
@@ -805,7 +791,6 @@ def _render_route_descriptor(
     return "\n".join(lines)
 
 
-# ---- Opaque path collection ------------------------------------------------
 # JSON Schema walker that locates property paths whose declared type is an
 # unconstrained object (``dict[str, Any]`` / ``JsonObject``). The TS runtime
 # uses these paths to skip the snake_case <-> camelCase rename inside those

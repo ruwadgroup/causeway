@@ -27,66 +27,6 @@
       "component": "causeway",
       "changelog-path": "CHANGELOG.md",
       "extra-files": ["src/causeway/__init__.py"]
-    },
-    "packages/causeway-auth-jwt": {
-      "package-name": "causeway-auth-jwt",
-      "component": "causeway-auth-jwt",
-      "changelog-path": "CHANGELOG.md"
-    },
-    "packages/causeway-cache-redis": {
-      "package-name": "causeway-cache-redis",
-      "component": "causeway-cache-redis",
-      "changelog-path": "CHANGELOG.md"
-    },
-    "packages/causeway-db-sqlmodel": {
-      "package-name": "causeway-db-sqlmodel",
-      "component": "causeway-db-sqlmodel",
-      "changelog-path": "CHANGELOG.md"
-    },
-    "packages/causeway-deploy-docker": {
-      "package-name": "causeway-deploy-docker",
-      "component": "causeway-deploy-docker",
-      "changelog-path": "CHANGELOG.md"
-    },
-    "packages/causeway-deploy-fly": {
-      "package-name": "causeway-deploy-fly",
-      "component": "causeway-deploy-fly",
-      "changelog-path": "CHANGELOG.md"
-    },
-    "packages/causeway-deploy-modal": {
-      "package-name": "causeway-deploy-modal",
-      "component": "causeway-deploy-modal",
-      "changelog-path": "CHANGELOG.md"
-    },
-    "packages/causeway-flags-growthbook": {
-      "package-name": "causeway-flags-growthbook",
-      "component": "causeway-flags-growthbook",
-      "changelog-path": "CHANGELOG.md"
-    },
-    "packages/causeway-mailer-smtp": {
-      "package-name": "causeway-mailer-smtp",
-      "component": "causeway-mailer-smtp",
-      "changelog-path": "CHANGELOG.md"
-    },
-    "packages/causeway-observe-sentry": {
-      "package-name": "causeway-observe-sentry",
-      "component": "causeway-observe-sentry",
-      "changelog-path": "CHANGELOG.md"
-    },
-    "packages/causeway-storage-fs": {
-      "package-name": "causeway-storage-fs",
-      "component": "causeway-storage-fs",
-      "changelog-path": "CHANGELOG.md"
-    },
-    "packages/causeway-storage-s3": {
-      "package-name": "causeway-storage-s3",
-      "component": "causeway-storage-s3",
-      "changelog-path": "CHANGELOG.md"
-    },
-    "packages/causeway-tasks-dramatiq": {
-      "package-name": "causeway-tasks-dramatiq",
-      "component": "causeway-tasks-dramatiq",
-      "changelog-path": "CHANGELOG.md"
     }
   }
 }

@@ -1,5 +1,3 @@
-// Shared types between the runtime and the generated client.
-
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 export type ParamLocation = "path" | "query" | "body" | "header" | "cookie" | "file";
 
@@ -66,6 +64,8 @@ export interface ClientConfig {
   scope?: unknown;
 }
 
+export type RouteInputValue = Record<string, unknown> | void;
+
 export interface QueryState<TData = unknown, TError = unknown> {
   data?: TData;
   error: TError | null;
@@ -75,7 +75,7 @@ export interface QueryState<TData = unknown, TError = unknown> {
 
 export interface DehydratedQuery {
   routeKey: string;
-  input: unknown;
+  input: RouteInputValue;
   scope: unknown;
   data: unknown;
   updatedAt: number;
@@ -83,6 +83,8 @@ export interface DehydratedQuery {
 
 export interface DehydratedClient {
   version: 1;
+  /** Content signature; framework bindings key hydration on this. Always set by `dehydrate()`. */
+  id?: string;
   queries: DehydratedQuery[];
 }
 
@@ -94,43 +96,32 @@ export interface HydrateOptions {
 export interface CausewayClient {
   query<TData = unknown>(
     routeKey: string,
-    input?: Record<string, unknown> | void,
+    input?: RouteInputValue,
     opts?: CallOptions,
   ): Promise<TData>;
   mutate<TData = unknown>(
     routeKey: string,
-    input?: Record<string, unknown> | void,
+    input?: RouteInputValue,
     opts?: CallOptions,
   ): Promise<TData>;
   refresh<TData = unknown>(
     routeKey: string,
-    input?: Record<string, unknown> | void,
+    input?: RouteInputValue,
     opts?: CallOptions,
   ): Promise<TData>;
   stream<TEvent = unknown>(
     routeKey: string,
-    input?: Record<string, unknown> | void,
+    input?: RouteInputValue,
     opts?: CallOptions,
   ): AsyncIterable<TEvent>;
-  getData<TData = unknown>(
-    routeKey: string,
-    input?: Record<string, unknown> | void,
-  ): TData | undefined;
-  setData<TData = unknown>(
-    routeKey: string,
-    input: Record<string, unknown> | void,
-    data: TData,
-  ): void;
+  getData<TData = unknown>(routeKey: string, input?: RouteInputValue): TData | undefined;
+  setData<TData = unknown>(routeKey: string, input: RouteInputValue, data: TData): void;
   getQueryState<TData = unknown, TError = unknown>(
     routeKey: string,
-    input?: Record<string, unknown> | void,
+    input?: RouteInputValue,
   ): QueryState<TData, TError>;
-  subscribe(
-    routeKey: string,
-    input: Record<string, unknown> | void,
-    listener: () => void,
-  ): () => void;
-  queryKey(routeKey: string, input?: Record<string, unknown> | void): string;
+  subscribe(routeKey: string, input: RouteInputValue, listener: () => void): () => void;
+  queryKey(routeKey: string, input?: RouteInputValue): string;
   dehydrate(): DehydratedClient;
   hydrate(snapshot: DehydratedClient, options?: HydrateOptions): void;
 }
@@ -229,6 +220,11 @@ export function unwrapResult(value: unknown): unknown {
 
 /** @internal — exported so generated clients can build errors with the same logic. */
 export function buildError(raw: unknown): CausewayError {
+  return toCausewayError(raw);
+}
+
+/** Normalize any thrown value into a `CausewayError` (bare network `TypeError`s included). */
+export function normalizeError(raw: unknown): CausewayError {
   return toCausewayError(raw);
 }
 

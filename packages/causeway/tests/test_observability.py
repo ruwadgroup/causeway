@@ -49,7 +49,7 @@ def test_configure_logging_json_mode_runs() -> None:
 
 
 @pytest.mark.asyncio
-async def test_request_id_propagates_through_dyadpy_app() -> None:
+async def test_request_id_propagates_through_causeway_app() -> None:
     inner = App()
 
     @inner.get("/x")

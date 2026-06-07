@@ -157,7 +157,7 @@ async def list_posts(db: Annotated[AsyncSession, db_session]) -> list[PostSummar
 `current_admin` is just another provider — it pulls the bearer token
 off the request and raises `Unauthorized` if it's missing or wrong.
 Every admin handler depends on it and declares `@raises(Unauthorized)`
-so the failure flows through dyadpy's `Result<T, E>` envelope and into
+so the failure flows through Causeway's `Result<T, E>` envelope and into
 the generated TS client as a typed error branch.
 
 ```python
@@ -175,7 +175,7 @@ async def stats(
 `@task` registers a coroutine with the active adapter. Calling
 `my_task.enqueue(...)` queues it. `@cron` schedules a task on a
 crontab expression. `app/plugins.py` wires the in-process
-`InMemoryAdapter`; swap it for `causeway-tasks-dramatiq` / Celery / Arq
+`InMemoryAdapter`; swap it for `causeway[dramatiq]` / Celery / Arq
 without touching any handler code.
 
 ```python
@@ -206,7 +206,7 @@ async def shutdown() -> None:
 
 ## What the response envelope looks like
 
-Handlers decorated with `@raises(...)` return dyadpy's Result envelope:
+Handlers decorated with `@raises(...)` return Causeway's `Result<T, E>` envelope:
 
 ```
 { "ok": true,  "data":  {...} }                # success

@@ -497,7 +497,7 @@ def deploy(
     if adapter is None:
         console.print(
             f"[red]no DeployTarget registered for {target!r}[/red]. "
-            f"Install ``causeway-deploy-{target}`` and register it in ``plugins.py``.",
+            f"Install the matching ``causeway[{target}]`` extra and register it in ``plugins.py``.",
         )
         raise typer.Exit(code=1)
 
@@ -510,12 +510,15 @@ def deploy(
 @app.command(name="plugin")
 def plugin_new(
     action: Annotated[str, typer.Argument(help="Subcommand; only 'new' is supported.")],
-    name: Annotated[str, typer.Argument(help="Plugin package name (e.g. causeway-storage-s3).")],
+    name: Annotated[
+        str,
+        typer.Argument(help="Plugin package name (e.g. causeway-contrib-search)."),
+    ],
     target: Annotated[Path | None, typer.Option("--target", "-t")] = None,
 ) -> None:
     """Scaffold a new Causeway plugin package.
 
-    ``causeway plugin new causeway-mailer-mailgun`` creates a sibling package with
+    ``causeway plugin new causeway-contrib-search`` creates a sibling package with
     a ``pyproject.toml``, entry-point wiring, and a smoke test placeholder.
     """
     if action != "new":

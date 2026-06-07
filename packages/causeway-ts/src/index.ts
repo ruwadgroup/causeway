@@ -3,9 +3,10 @@
 // method trees.
 
 export { createRouteKeyClient } from "./client.js";
+export { isWriteMethod, WRITE_METHODS } from "./http.js";
 export { parseSSE } from "./sse.js";
 export { DEFAULT_FORWARDED_HEADERS, forwardHeaders } from "./ssr.js";
-export { CausewayError, unwrapResult } from "./types.js";
+export { CausewayError, normalizeError, unwrapResult } from "./types.js";
 export type { HeaderRecord, HeaderRecordValue, HeaderSource, HeadersLike } from "./ssr.js";
 export type {
   CallOptions,
@@ -22,5 +23,6 @@ export type {
   QueryState,
   Result,
   RouteDescriptor,
+  RouteInputValue,
   RouteMeta,
 } from "./types.js";

@@ -1,11 +1,15 @@
-import type { CallOptions } from "@causewayjs/ts";
+import type { CallOptions, CausewayClient } from "@causewayjs/ts";
+import type { RouteInputValue } from "@causewayjs/ts";
 
 export {
   CausewayError,
   DEFAULT_FORWARDED_HEADERS,
   createRouteKeyClient as createClient,
   forwardHeaders,
+  isWriteMethod,
+  normalizeError,
   unwrapResult,
+  WRITE_METHODS,
 } from "@causewayjs/ts";
 
 export type {
@@ -21,12 +25,15 @@ export type {
   HydrateOptions,
   QueryState,
   RouteDescriptor,
+  RouteInputValue,
   RouteMeta,
 } from "@causewayjs/ts";
 
 export interface Register {}
 
-export type RouteInputValue = Record<string, unknown> | void;
+export type ClientFactory<TClient = CausewayClient, TOptions extends object = object> = (
+  options?: TOptions,
+) => TClient;
 
 type RegisteredValue<TKey extends PropertyKey, TFallback> = TKey extends keyof Register
   ? Register[TKey]

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import re
 import shutil
 from dataclasses import asdict, dataclass, field
@@ -241,12 +242,27 @@ def _dotted_for(routes_root: Path, file: Path) -> str:
     return ".".join([MIRROR_PACKAGE, ROUTES_SUBPACKAGE, *parts])
 
 
+_log = logging.getLogger("causeway.freeze")
+
+
 def _collect_plugin_entry_points() -> list[tuple[str, str]]:
     try:
         eps = entry_points(group="causeway.plugins")
     except TypeError:  # pragma: no cover - py<3.10 fallback
         eps = entry_points().get("causeway.plugins", [])  # type: ignore[arg-type]
-    return sorted((ep.name, ep.value) for ep in eps)
+    # Only bake in plugins that actually import — mirrors the guarded loading in
+    # plugins.discover(). Baking an unimportable entry point (e.g. an installed
+    # plugin whose optional deps are missing) would emit a frozen build that
+    # crashes on import.
+    collected: list[tuple[str, str]] = []
+    for ep in eps:
+        try:
+            ep.load()
+        except Exception as exc:
+            _log.warning("freeze: skipping plugin %r that failed to import: %s", ep.name, exc)
+            continue
+        collected.append((ep.name, ep.value))
+    return sorted(collected)
 
 
 _GEN_HEADER = (

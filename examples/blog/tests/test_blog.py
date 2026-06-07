@@ -77,7 +77,7 @@ async def test_public_listing_excludes_drafts() -> None:
 async def test_admin_routes_require_token() -> None:
     async with _client() as c:
         resp = await c.get("/admin/posts")
-    # `@raises(Unauthorized)` routes the failure through dyadpy's envelope:
+    # `@raises(Unauthorized)` routes the failure through Causeway's envelope:
     # HTTP 200, body says ok=false with a discriminated error kind.
     body = resp.json()
     assert body["ok"] is False

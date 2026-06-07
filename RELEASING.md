@@ -3,21 +3,16 @@
 A maintainer-facing checklist. Everything in here must be true before
 `causeway-v0.1.0` (PyPI) gets published. Run top to bottom, tick boxes as you go.
 
-> Causeway is a **monorepo with 13 publishable packages** on PyPI: `causeway`
-> (core) plus 12 plugins (`causeway-auth-jwt`, `causeway-cache-redis`,
-> `causeway-db-sqlmodel`, `causeway-deploy-docker`, `causeway-deploy-fly`,
-> `causeway-deploy-modal`, `causeway-flags-growthbook`, `causeway-mailer-smtp`,
-> `causeway-observe-sentry`, `causeway-storage-fs`, `causeway-storage-s3`,
-> `causeway-tasks-dramatiq`).
+> Causeway publishes a single PyPI package: `causeway`. Optional integrations
+> ship inside that wheel under `causeway.contrib.*` and expose dependencies via
+> extras such as `causeway[jwt]`, `causeway[s3]`, and `causeway[dramatiq]`.
 >
-> Each has its own changelog and version, managed by release-please. Tags
-> follow `release-please-config.json`: `<component>-vX.Y.Z`. `release.yml`
-> fans out a publish job per package via dynamic matrix; only packages
-> release-please actually released in a given cycle get built and published.
+> Release-please manages the core changelog and version. Tags follow
+> `release-please-config.json`: `causeway-vX.Y.Z`.
 >
-> **Prerequisite (one-time, manual on pypi.org):** each of the 13 package
-> names needs a Pending Trusted Publisher configured pointing at
-> `tamimbinhakim/causeway`, workflow `release.yml`, environment `pypi`.
+> **Prerequisite (one-time, manual on pypi.org):** the `causeway` project needs
+> a Trusted Publisher configured pointing at `ruwadgroup/causeway`, workflow
+> `release.yml`, environment `pypi`.
 
 ---
 
@@ -102,7 +97,7 @@ unzip -l dist/causeway-*-py3-none-any.whl
 - [ ] `causeway` project name not taken (check pypi.org/project/causeway/) — if
       taken, pick a fallback (`causeway-py`, `causewayfw`) and update everything
       consistently
-- [ ] PyPI Trusted Publisher configured for `tamimbinhakim/causeway`,
+- [ ] PyPI Trusted Publisher configured for `ruwadgroup/causeway`,
       `release.yml`, environment `pypi`
 - [ ] No `PYPI_TOKEN` lying around in old workflows (we use OIDC)
 - [ ] GitHub environment `pypi` exists with deployment protection on `main`
@@ -173,7 +168,7 @@ If anything goes sideways mid-publish:
 Use this only when you intentionally bypass the release-please PR loop:
 
 ```bash
-gh workflow run release.yml -f path=causeway
+gh workflow run release.yml -f package=causeway
 ```
 
 The workflow builds, publishes, creates the `causeway-vX.Y.Z` tag, and

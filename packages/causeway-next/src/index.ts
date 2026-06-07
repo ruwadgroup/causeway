@@ -1,10 +1,12 @@
 import {
   createClient,
   forwardHeaders,
+  isWriteMethod,
   queryOptions,
   type CallOptions,
   type CausewayClient,
   type ClientConfig,
+  type ClientFactory,
   type DehydratedClient,
   type HeaderSource,
   type QueryOptions,
@@ -26,9 +28,7 @@ export interface ServerClientConfig extends Omit<ClientConfig, "headers" | "scop
   scope?: unknown;
 }
 
-export type ClientFactory<TClient = CausewayClient, TOptions extends object = object> = (
-  options?: TOptions,
-) => TClient;
+export type { ClientFactory };
 
 type AnyClientFactory = (options?: object) => unknown;
 
@@ -152,7 +152,11 @@ export async function prefetch<TData = unknown>(
   const request = normalizePrefetchRequest(
     typeof routeKeyOrOptions === "string" ? [routeKeyOrOptions, input, opts] : routeKeyOrOptions,
   );
-  return (await queryClient(client).query(request.routeKey, request.input, request.call)) as TData;
+  return (await asCausewayClient(client).query(
+    request.routeKey,
+    request.input,
+    request.call,
+  )) as TData;
 }
 
 export async function prefetchMany<TClient>(
@@ -162,7 +166,7 @@ export async function prefetchMany<TClient>(
   await Promise.all(
     requests.map((request) => {
       const { call, input, routeKey } = normalizePrefetchRequest(request);
-      return queryClient(client).query(routeKey, input, call);
+      return asCausewayClient(client).query(routeKey, input, call);
     }),
   );
   return client;
@@ -218,7 +222,11 @@ export function createServerHydration(
     const request = normalizePrefetchRequest(
       typeof routeKeyOrOptions === "string" ? [routeKeyOrOptions, input, opts] : routeKeyOrOptions,
     );
-    const data = await queryClient(client).query(request.routeKey, request.input, request.call);
+    const data = await asCausewayClient(client).query(
+      request.routeKey,
+      request.input,
+      request.call,
+    );
     markPrefetched();
     return data;
   }) as Prefetcher;
@@ -357,11 +365,7 @@ function normalizePrefetchRequest(
 }
 
 function asCausewayClient(client: unknown): CausewayClient {
-  return client as unknown as CausewayClient;
-}
-
-function queryClient(client: unknown): CausewayClient {
-  return client as unknown as CausewayClient;
+  return client as CausewayClient;
 }
 
 function withIdempotency(
@@ -370,15 +374,12 @@ function withIdempotency(
 ): typeof globalThis.fetch {
   if (!enabled) return fetchImpl;
   return (input, init) => {
-    const method = (init?.method ?? "GET").toUpperCase();
-    if (!WRITE_METHODS.has(method)) return fetchImpl(input, init);
+    if (!isWriteMethod(init?.method)) return fetchImpl(input, init);
     const headers = new Headers(init?.headers);
     if (!headers.has("Idempotency-Key")) headers.set("Idempotency-Key", crypto.randomUUID());
     return fetchImpl(input, { ...init, headers });
   };
 }
-
-const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 function isDevRuntime(): boolean {
   const env = (globalThis as { process?: { env?: { NODE_ENV?: string } } }).process?.env?.NODE_ENV;

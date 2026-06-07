@@ -8,10 +8,10 @@ If you're trying to **use** Causeway to build an app, you're in the wrong direct
 
 - **[Architecture](./architecture.md)** — the 30-second mental model and the layer-by-layer tour. What happens when you type `causeway dev`.
 - **[Code map](./code-map.md)** — every file in `packages/causeway/src/causeway/` annotated. The thing you read once and bookmark.
-- **[Contributing (deep)](./contributing.md)** — beyond the top-level [CONTRIBUTING.md](../../CONTRIBUTING.md): coding conventions, when to add a comment vs. delete one, how to handle plugin packages, why a public symbol gets re-exported.
+- **[Contributing (deep)](./contributing.md)** — beyond the top-level [CONTRIBUTING.md](../../CONTRIBUTING.md): coding conventions, when to add a comment vs. delete one, how to handle bundled adapters, why a public symbol gets re-exported.
 - **[Testing strategy](./testing.md)** — what we test, what we don't, where the bar is.
 - **[Releases](./releases.md)** — how release-please drives PyPI publishes, what changes versioning, how to ship a hotfix.
-- **[Writing a new official plugin](./plugin-authoring.md)** — the on-ramp for a maintainer adding a sibling `causeway-<role>-<impl>` package.
+- **[Writing a new official adapter](./plugin-authoring.md)** — the on-ramp for a maintainer adding a bundled `causeway.contrib` adapter.
 - **[Runtime substrate](../architecture/runtime-substrate.md)** — `causeway._runtime`: the typed-RPC engine under the convention layer. Read this before touching `_runtime/*` or before building a different framework on the same primitives.
 
 ## Quick orientation
@@ -21,26 +21,13 @@ causeway/                                     # monorepo root (pnpm workspace)
 ├── packages/
 │   ├── causeway/                             # the core framework (PyPI: causeway)
 │   │   ├── src/causeway/                     # see code-map.md
+│   │   │   └── contrib/                      # official optional adapters
 │   │   ├── tests/                        # pytest, asyncio mode auto
 │   │   ├── pyproject.toml                # hatchling build, ruff/mypy/pytest config
 │   │   └── pyrightconfig.json            # package-local pyright config
-│   ├── causeway-tasks-dramatiq/              # Dramatiq TaskAdapter
-│   ├── causeway-storage-s3/                  # S3 / R2 / MinIO Storage
-│   ├── causeway-storage-fs/                  # local filesystem Storage
-│   ├── causeway-cache-redis/                 # Redis KV / Cache
-│   ├── causeway-db-sqlmodel/                    # SQLModel DBSession
-│   ├── causeway-auth-jwt/                    # stateless JWT AuthProvider
-│   ├── causeway-mailer-smtp/                 # SMTP Mailer
-│   ├── causeway-flags-growthbook/            # FeatureFlags via GrowthBook
-│   ├── causeway-observe-sentry/              # Sentry observer plugin
-│   ├── causeway-deploy-docker/               # Dockerfile / Compose deploy target
-│   ├── causeway-deploy-fly/                  # Fly.io deploy target
-│   ├── causeway-deploy-modal/                # Modal deploy target
 │   ├── causeway-client/                      # owned route-key client runtime
 │   ├── causeway-react/                       # React provider + hooks
-│   ├── causeway-next/                        # Next.js server helpers
-│   ├── causeway-solid/                       # Solid route-key resources
-│   └── causeway-svelte/                      # Svelte route-key stores
+│   └── causeway-next/                        # Next.js server helpers
 ├── examples/                             # runnable starter projects, not published
 ├── docs/                                 # what you're reading
 ├── pyrightconfig.json                    # root pyright config — points venv at packages/causeway/.venv

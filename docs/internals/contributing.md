@@ -96,24 +96,27 @@ Is it documenting a security-relevant decision?          → keep, make it impos
 Is it a "TODO: implement X" without a tracked issue?     → delete or open the issue
 ```
 
-## Plugin packages
+## Built-in adapters
 
-The official plugin set lives in `packages/causeway-<role>-<impl>/`. They follow a shared layout:
+The official adapter set lives inside `packages/causeway/src/causeway/contrib/`.
+Adapters with third-party dependencies are installed through extras such as
+`causeway[s3]` and `causeway[dramatiq]`.
 
 ```
-packages/causeway-tasks-dramatiq/
-├── src/causeway_tasks_dramatiq/
-│   └── __init__.py         # the entire adapter, plus plugin(settings)
-├── tests/
-├── pyproject.toml
-└── README.md
+packages/causeway/
+├── src/causeway/contrib/
+│   ├── s3.py
+│   ├── sqlmodel.py
+│   └── dramatiq/
+└── tests/contrib/
 ```
 
 Conventions:
 
-- The package name is `causeway-<role>-<impl>` on PyPI, importable as `causeway_<role>_<impl>` (Python's name-normalization rule).
-- The class is `<Impl><Role>Adapter` (e.g. `DramatiqAdapter`, `S3Storage`, `JwtAuth`).
-- The package exposes a `plugin(settings)` function as a `causeway.plugins` entry point. That function is the auto-load path; it reads from `settings.<field>` and calls `causeway.register(<adapter>)`.
+- Extras use the shortest clear backend name (`s3`, `redis`, `sqlmodel`, `dramatiq`).
+- Modules live under `causeway.contrib.<extra>`.
+- Adapter class names remain explicit (e.g. `DramatiqAdapter`, `S3Storage`, `JwtAuth`).
+- Bundled adapters may expose a `plugin(settings)` helper, but apps usually register them explicitly from `plugins.py`.
 - If the package needs settings fields the app didn't declare, expose a `settings_fragment()` method on the adapter that returns the field dict. The framework's `merge_settings_fragments` pass picks it up.
 - Declare `contract_version: ClassVar[str] = "v1.0"` on the adapter class. The registry warns on mismatch.
 
@@ -121,9 +124,8 @@ Full walkthrough: [`plugin-authoring.md`](./plugin-authoring.md).
 
 ## When you don't know whether something is "official"
 
-If the change is in `packages/causeway/src/causeway/`, it's the core framework — held to the strict surface rules above.
-
-If the change is in `packages/causeway-*/`, it's an official plugin — same shape, but the contract version is what's load-bearing for users, not the package version.
+If the change is in `packages/causeway/src/causeway/`, it's the core framework
+or a bundled adapter — held to the strict surface rules above.
 
 If the change is in `examples/`, it's pedagogical — the only rule is "it actually runs."
 

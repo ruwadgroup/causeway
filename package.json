@@ -3,15 +3,15 @@
   "version": "0.0.0",
   "private": true,
   "description": "A lean backend framework for type-safe Python APIs — file-based routing, typed config/DI, scoped providers, plugin registry, and background tasks. Generates typed TypeScript clients off your Python handler signatures.",
-  "homepage": "https://github.com/tamimbinhakim/causeway#readme",
+  "homepage": "https://github.com/ruwadgroup/causeway#readme",
   "bugs": {
-    "url": "https://github.com/tamimbinhakim/causeway/issues"
+    "url": "https://github.com/ruwadgroup/causeway/issues"
   },
   "license": "MIT",
   "author": "Tamim Bin Hakim (@tamimbinhakim)",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tamimbinhakim/causeway.git"
+    "url": "git+https://github.com/ruwadgroup/causeway.git"
   },
   "workspaces": [
     "packages/*",

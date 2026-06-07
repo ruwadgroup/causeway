@@ -1,11 +1,11 @@
 # Deploying to Docker
 
-Via the `causeway-deploy-docker` plugin.
+Via the `causeway[docker]` adapter.
 
 ## Install
 
 ```bash
-uv add causeway-deploy-docker
+uv add "causeway[docker]"
 ```
 
 ## Register
@@ -13,7 +13,7 @@ uv add causeway-deploy-docker
 ```python
 # src/app/plugins.py
 from causeway import register
-from causeway_deploy_docker import DockerDeploy
+from causeway.contrib.docker import DockerDeploy
 
 register(DockerDeploy(
     image="my-registry/my-app",

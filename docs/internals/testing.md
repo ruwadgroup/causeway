@@ -38,7 +38,9 @@ Each public module has a matching test file. New module → new test file.
 
 **Lifecycle.** Plugin startup / shutdown ordering, error handling per-plugin, ready-check aggregation — covered explicitly because the registry is load-bearing.
 
-**Adapter parity.** The reference `InMemoryAdapter` is the contract probe. Real adapters (`DramatiqAdapter`, etc.) have their own tests in their sibling package, but they implement the same `TaskAdapter` protocol the core tests verify.
+**Adapter parity.** The reference `InMemoryAdapter` is the contract probe.
+Bundled adapters (`DramatiqAdapter`, etc.) have tests under `tests/contrib`,
+but they implement the same `TaskAdapter` protocol the core tests verify.
 
 **Integration via `TestApp`.** End-to-end tests — discover a synthesized routes tree under `tmp_path`, mount it with `TestApp.from_routes`, fire HTTP requests through httpx's `ASGITransport`, assert on the responses. These catch composition bugs that unit tests miss.
 

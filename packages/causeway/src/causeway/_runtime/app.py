@@ -246,8 +246,6 @@ def _ws_endpoint_for(
             send_type=route.send_type,
             recv_type=route.recv_type,
         )
-        # Pass through whatever positional name the handler used. We just
-        # supply the channel as the first/only argument.
         await route.handler(channel)
 
     return endpoint

@@ -54,7 +54,7 @@ Every choice has one obvious place; surprising behavior is a bug. There is one p
 
 ### 2. Backend-first, client-aware
 
-No template engine, no asset pipeline, no page router. Causeway owns the backend contract and the client runtime that speaks to it; your frontend framework remains yours. React, Next, Solid, and Svelte get small adapters over the same route-key client instead of each one inventing its own cache/invalidation story.
+No template engine, no asset pipeline, no page router. Causeway owns the backend contract and the client runtime that speaks to it; your frontend framework remains yours. React and Next.js get small adapters over the same route-key client instead of each one inventing its own cache/invalidation story.
 
 ### 3. Plugins, not batteries
 
@@ -70,7 +70,7 @@ Causeway binds the web / task surface and stops there. No ORM, no admin panel, n
 
 ### 6. One artifact, anywhere
 
-A Causeway app is an ASGI app + a manifest. It runs under `uvicorn` locally, in Docker, on Modal, on Fly, on Lambda (via Mangum) — without code changes. The deploy plugin is a wrapper around provider CLIs, not a hosting platform.
+A Causeway app is an ASGI app + a manifest. It runs under `uvicorn` locally, in Docker, on Modal, on Fly, on Lambda (via Mangum) — without code changes. The deploy adapter is a wrapper around provider CLIs, not a hosting platform.
 
 ## The "lean core" boundary
 
@@ -101,7 +101,7 @@ In one sentence:
 
 These aren't "we haven't gotten to them yet." They're "we have decided not to do them, and someone proposing them will be politely redirected."
 
-1. **No ORM in core.** Ever. The `causeway-db-sqlmodel` plugin (and any future `causeway-tortoise` / `causeway-prisma-py`) lives outside.
+1. **No ORM as a default.** SQLModel lives behind the optional `causeway[sqlmodel]` extra; other ORMs can plug in the same way.
 2. **No admin panel in core.** Recommend `sqladmin` / `Dashibase` / `retool` / `RowZero`. Maybe a `causeway-admin-*` plugin family someday.
 3. **No HTML rendering / template engine in core.** The output is a JSON API + a typed TypeScript client. If you want HTMX, build it yourself; the framework won't fight you, but it also won't help.
 4. **No infrastructure provisioning.** That's Terraform / Pulumi / Modal. `causeway deploy` shells out to provider CLIs; it does not manage your infrastructure.

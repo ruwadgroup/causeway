@@ -25,7 +25,7 @@ I aim to acknowledge reports within **72 hours** and work with you on a
 fix and a coordinated disclosure timeline (usually 7–30 days depending on
 severity).
 
-[report]: https://github.com/tamimbinhakim/causeway/security/advisories/new
+[report]: https://github.com/ruwadgroup/causeway/security/advisories/new
 
 ## Scope
 

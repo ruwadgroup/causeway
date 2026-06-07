@@ -1,6 +1,6 @@
 {
   "name": "@causewayjs/client",
-  "version": "0.1.0-alpha.3",
+  "version": "1.0.0-alpha.0",
   "description": "Route-key Causeway client runtime with owned cache, mutations, refreshes, and hydration.",
   "keywords": [
     "python",
@@ -8,15 +8,15 @@
     "typescript",
     "causeway"
   ],
-  "homepage": "https://github.com/tamimbinhakim/causeway#readme",
+  "homepage": "https://github.com/ruwadgroup/causeway#readme",
   "bugs": {
-    "url": "https://github.com/tamimbinhakim/causeway/issues"
+    "url": "https://github.com/ruwadgroup/causeway/issues"
   },
   "license": "MIT",
   "author": "Tamim Bin Hakim (@tamimbinhakim)",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tamimbinhakim/causeway.git",
+    "url": "git+https://github.com/ruwadgroup/causeway.git",
     "directory": "packages/causeway-client"
   },
   "files": [
@@ -32,9 +32,14 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./package.json": "./package.json"
   },
@@ -43,19 +48,19 @@
     "provenance": true
   },
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
+    "build": "tsdown",
+    "dev": "tsdown --watch",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
     "clean": "rimraf dist .turbo"
   },
   "dependencies": {
-    "@causewayjs/ts": "workspace:*"
+    "@causewayjs/ts": "workspace:1.0.0-alpha.0"
   },
   "devDependencies": {
     "@types/node": "25.7.0",
-    "tsup": "8.5.1",
+    "tsdown": "0.22.2",
     "vite": "8.0.12",
     "vitest": "4.1.6"
   },

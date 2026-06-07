@@ -15,7 +15,7 @@ client ── POST /uploads/finalize ─> server  (records the key)
 ```python
 from causeway import post, register
 from causeway.contracts import Storage
-from causeway_storage_s3 import S3Storage
+from causeway.contrib.s3 import S3Storage
 
 register(S3Storage(bucket="user-uploads"))
 

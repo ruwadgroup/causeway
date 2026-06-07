@@ -6,7 +6,7 @@
 uv add causeway
 ```
 
-This is the core Python package of [Causeway](https://github.com/tamimbinhakim/causeway). It ships:
+This is the core Python package of [Causeway](https://github.com/ruwadgroup/causeway). It ships:
 
 - A **file-based router** that walks `src/app/routes/**/*.py`, picks up `$id.py`, `(group)/`, `_middleware.py`, and `_scope.py`, and registers handlers into the app's route table.
 - A **typed config layer** that wraps `pydantic-settings` and exposes non-secret fields to the generated TypeScript client.
@@ -17,7 +17,7 @@ This is the core Python package of [Causeway](https://github.com/tamimbinhakim/c
 - An **App Graph** that exposes routes, scopes, permissions, middleware, providers, tasks, plugins, events, and refresh contracts.
 - A **CLI** (`causeway new`, `causeway dev`, `causeway build`, `causeway inspect`, `causeway deploy <target>`) that runs the whole loop.
 
-For the full story, the design rationale, and a side-by-side vs. FastAPI / Django + Ninja / Encore.ts / NestJS, see the [repo README](https://github.com/tamimbinhakim/causeway).
+For the full story, the design rationale, and a side-by-side vs. FastAPI / Django + Ninja / Encore.ts / NestJS, see the [repo README](https://github.com/ruwadgroup/causeway).
 
 ## 30-second example
 
@@ -85,7 +85,7 @@ const user = await client.query("GET /users/$id", { id });
 | `TestApp`                                        | Test client with DI overrides and `tasks_eager()` mode.                  |
 | `causeway` CLI                                   | `new`, `dev`, `build`, `codegen`, `ir`, `inspect`, `openapi`, `deploy`.  |
 
-Full reference: <https://github.com/tamimbinhakim/causeway/tree/main/docs/reference>
+Full reference: <https://github.com/ruwadgroup/causeway/tree/main/docs/reference>
 
 ## Optional extras
 

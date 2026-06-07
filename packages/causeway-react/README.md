@@ -78,7 +78,7 @@ There is no TanStack Query dependency in the primary runtime. Causeway keeps the
 
 ## Docs
 
-See the full React guide in the Causeway docs: <https://github.com/tamimbinhakim/causeway/blob/main/docs/client/react.md>.
+See the full React guide in the Causeway docs: <https://github.com/ruwadgroup/causeway/blob/main/docs/client/react.md>.
 
 ## License
 

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       package:
-        description: "Which npm package to publish (or 'all' for all six)"
+        description: "Which npm package to publish (or 'all' for all four)"
         required: true
         default: "all"
         type: choice
@@ -14,8 +14,6 @@ on:
           - "@causewayjs/client"
           - "@causewayjs/react"
           - "@causewayjs/next"
-          - "@causewayjs/solid"
-          - "@causewayjs/svelte"
 
 permissions:
   contents: read
@@ -35,8 +33,6 @@ jobs:
           - { pkg: "@causewayjs/client", dir: causeway-client }
           - { pkg: "@causewayjs/react", dir: causeway-react }
           - { pkg: "@causewayjs/next", dir: causeway-next }
-          - { pkg: "@causewayjs/solid", dir: causeway-solid }
-          - { pkg: "@causewayjs/svelte", dir: causeway-svelte }
         # The matrix above always includes all packages; the step-level `if` below
         # filters to the requested package when the input isn't `all`. (GitHub
         # Actions doesn't support a clean way to filter the matrix itself off

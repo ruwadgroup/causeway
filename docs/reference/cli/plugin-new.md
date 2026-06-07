@@ -3,7 +3,7 @@
 Scaffold a new Causeway plugin package.
 
 ```bash
-causeway plugin new causeway-mailer-resend
+causeway plugin new causeway-contrib-resend
 ```
 
 ## Synopsis
@@ -14,18 +14,18 @@ causeway plugin new <name> [--target <dir>]
 
 ## Arguments
 
-| Argument          | Default     | Description                                          |
-| ----------------- | ----------- | ---------------------------------------------------- |
-| `<name>`          | —           | Plugin package name (e.g. `causeway-mailer-resend`). |
-| `--target` / `-t` | current dir | Parent directory.                                    |
+| Argument          | Default     | Description                                           |
+| ----------------- | ----------- | ----------------------------------------------------- |
+| `<name>`          | —           | Plugin package name (e.g. `causeway-contrib-resend`). |
+| `--target` / `-t` | current dir | Parent directory.                                     |
 
 ## What it creates
 
 ```
-causeway-mailer-resend/
+causeway-contrib-resend/
 ├── pyproject.toml             # with the entry-point wiring pre-filled
 ├── README.md
-├── src/causeway_mailer_resend/
+├── src/causeway_contrib_resend/
 │   ├── __init__.py            # plugin(settings) callable
 │   └── adapter.py             # stub adapter class
 └── tests/
@@ -34,8 +34,8 @@ causeway-mailer-resend/
 
 ## Naming convention
 
-- Official plugins: `causeway-<role>-<impl>` (e.g. `causeway-mailer-resend`).
-- Third-party: `causeway-contrib-<thing>` — distinguishes from official adapters.
+- Bundled official adapters live under `causeway.contrib` and install through extras.
+- Third-party packages should use `causeway-contrib-<thing>`.
 
 ## See also
 

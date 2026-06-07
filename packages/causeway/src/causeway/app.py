@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import os
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -38,6 +38,7 @@ def create_app(
     settings: Any = None,
     diagnostics: bool = True,
     request_id: bool = True,
+    health: bool = True,
     error_renderer_: bool = True,
     error_formatter: HttpErrorFormatter | None = None,
 ) -> Any:
@@ -52,6 +53,7 @@ def create_app(
         settings=settings,
         diagnostics=diagnostics,
         request_id=request_id,
+        health=health,
         error_renderer_=error_renderer_,
         error_formatter=error_formatter,
     )
@@ -64,6 +66,7 @@ def create_app_frozen(
     settings: Any = None,
     diagnostics: bool = False,
     request_id: bool = True,
+    health: bool = True,
     error_renderer_: bool = True,
     error_formatter: HttpErrorFormatter | None = None,
 ) -> Any:
@@ -76,6 +79,7 @@ def create_app_frozen(
         settings=settings,
         diagnostics=diagnostics,
         request_id=request_id,
+        health=health,
         error_renderer_=error_renderer_,
         error_formatter=error_formatter,
     )
@@ -89,6 +93,7 @@ def _assemble(
     settings: Any,
     diagnostics: bool,
     request_id: bool,
+    health: bool,
     error_renderer_: bool,
     error_formatter: HttpErrorFormatter | None,
 ) -> Any:
@@ -96,7 +101,8 @@ def _assemble(
     inner = App(exception_handler=renderer, error_formatter=error_formatter)
     register(inner, found)
     inner.graph = build_graph(inner, events=events)
-    attach_health(inner)
+    if health:
+        attach_health(inner)
     if diagnostics:
         attach_diagnostics(inner, settings=settings)
 
@@ -119,7 +125,7 @@ def _assemble(
         # this: app shutdown runs while adapters are still alive, then plugins.
         await _plugins.startup_all(settings)
         if app_lifespan is not None:
-            startup = getattr(app_lifespan, "startup", None)
+            startup: Callable[[], Awaitable[object]] | None = getattr(app_lifespan, "startup", None)
             if callable(startup):
                 await startup()
         for hook in found.startup_hooks:
@@ -130,7 +136,9 @@ def _assemble(
             for hook in found.shutdown_hooks:
                 await hook()
             if app_lifespan is not None:
-                shutdown = getattr(app_lifespan, "shutdown", None)
+                shutdown: Callable[[], Awaitable[object]] | None = getattr(
+                    app_lifespan, "shutdown", None
+                )
                 if callable(shutdown):
                     await shutdown()
             await _plugins.shutdown_all()

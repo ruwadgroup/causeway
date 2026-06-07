@@ -14,7 +14,7 @@ roadmap, what's out of scope. I try to make those calls in public — in
 PR threads, in issues, in [Discussions][disc] — so you can see the
 reasoning and push back. When I'm wrong, I want to know about it.
 
-[disc]: https://github.com/tamimbinhakim/causeway/discussions
+[disc]: https://github.com/ruwadgroup/causeway/discussions
 
 ## How decisions get made
 

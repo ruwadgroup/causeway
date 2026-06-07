@@ -53,7 +53,7 @@ Use this package on the server side of a Next app. The generated client and `@ca
 
 ## Docs
 
-See the full Next.js guide in the Causeway docs: <https://github.com/tamimbinhakim/causeway/blob/main/docs/client/next.md>.
+See the full Next.js guide in the Causeway docs: <https://github.com/ruwadgroup/causeway/blob/main/docs/client/next.md>.
 
 ## License
 

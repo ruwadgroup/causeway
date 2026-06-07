@@ -145,9 +145,6 @@ async def stub(provider: Callable[..., Any], value: Any) -> AsyncIterator[None]:
         provider.__code__ = original_code
 
 
-# ---------------------------------------------------------------------------
-# Event / webhook capture helpers
-# ---------------------------------------------------------------------------
 from dataclasses import dataclass as _dataclass  # noqa: E402
 
 from causeway._testing import (  # noqa: E402 - inline-scenario surface

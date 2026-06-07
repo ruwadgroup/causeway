@@ -32,7 +32,7 @@ The CLI scans registered plugins for one whose class name matches `<target>Deplo
 If no adapter matches, the command fails with:
 
 ```
-no DeployTarget registered for 'docker'. Install `causeway-deploy-docker` and register it in `plugins.py`.
+no DeployTarget registered for 'docker'. Install `causeway[docker]` and register it in `plugins.py`.
 ```
 
 ## Adapter contract

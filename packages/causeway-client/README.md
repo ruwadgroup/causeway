@@ -34,8 +34,8 @@ for await (const event of client.stream("GET /customers/$id/events", { id })) {
 The public name is the route key. There is no generated method tree and no separate resource-key convention.
 
 Generated `types.d.ts` registers `RouteInput<K>`, `RouteData<K>`, and
-`RouteError<K>` with `@causewayjs/client`. React hooks, Svelte stores, Solid
-resources, and Next prefetch helpers all read that same registry.
+`RouteError<K>` with `@causewayjs/client`. The React hooks and Next prefetch
+helpers read that same registry.
 
 ## License
 

@@ -1,41 +1,37 @@
-# Writing a new official plugin
+# Writing a new official adapter
 
-The on-ramp for adding a sibling `causeway-<role>-<impl>` package to the monorepo. Aimed at maintainers, not external authors — external plugin authors should read [Plugins](../app/plugins.md).
+The on-ramp for adding a bundled adapter under `causeway.contrib`. Aimed at
+maintainers, not external authors — external plugin authors should read
+[Plugins](../app/plugins.md).
 
 ## Decide on the name
 
-Naming convention is `causeway-<role>-<impl>`:
+Naming convention is the shortest clear backend name:
 
-- `<role>` is the contract family (`tasks`, `storage`, `cache`, `auth`, `mailer`, `flags`, `observe`, `db`, `deploy`, …).
-- `<impl>` is the concrete implementation (`dramatiq`, `s3`, `redis`, `jwt`, `smtp`, `growthbook`, `sentry`, `sqlmodel`, `fly`, …).
+- Extra: `causeway[s3]`, `causeway[redis]`, `causeway[dramatiq]`.
+- Module: `causeway.contrib.s3`, `causeway.contrib.redis`, `causeway.contrib.dramatiq`.
+- Class: explicit CamelCase (`S3Storage`, `RedisKV`, `DramatiqAdapter`).
 
-PyPI name uses hyphens: `causeway-tasks-dramatiq`. Python import name uses underscores: `causeway_tasks_dramatiq`. Class name uses CamelCase: `DramatiqAdapter`, `S3Storage`, `JwtAuth`, `SmtpMailer`.
+If your role is new, open a Discussion first. Adding a contract family is a
+bigger decision than adding an implementation.
 
-If your role is new (no existing `causeway-<role>-*` packages), open a Discussion first. Adding a contract family is a bigger decision than adding an implementation.
+## Add the module
 
-## Scaffold the package
-
-```bash
-causeway plugin new causeway-<role>-<impl>
-```
-
-That generates:
+Add the implementation under `packages/causeway/src/causeway/contrib/`:
 
 ```
-packages/causeway-<role>-<impl>/
-├── src/causeway_<role>_<impl>/
-│   └── __init__.py
-├── tests/
-│   └── test_smoke.py
-├── pyproject.toml
-└── README.md
+packages/causeway/
+├── src/causeway/contrib/<name>.py
+└── tests/contrib/test_<name>.py
 ```
 
-The generated `pyproject.toml` declares the entry point:
+If the adapter needs multiple files, use a subpackage:
 
-```toml
-[project.entry-points."causeway.plugins"]
-<role>-<impl> = "causeway_<role>_<impl>:plugin"
+```
+src/causeway/contrib/dramatiq/
+├── __init__.py
+├── cli.py
+└── runtime.py
 ```
 
 ## Implement the contract
@@ -43,7 +39,7 @@ The generated `pyproject.toml` declares the entry point:
 Pick the protocol from `causeway.contracts` and implement it. Minimum surface:
 
 ```python
-# packages/causeway-<role>-<impl>/src/causeway_<role>_<impl>/__init__.py
+# packages/causeway/src/causeway/contrib/<name>.py
 from typing import Any, ClassVar
 from causeway.contracts import <Role>   # e.g. TaskAdapter, Storage, Mailer
 
@@ -64,11 +60,8 @@ class <Impl><Role>Adapter:
 
 
 def plugin(settings: Any) -> None:
-    """Entry-point callable. Reads settings, calls register()."""
+    """Settings-aware helper. Reads settings, calls register()."""
     from causeway import register
-
-    if settings is None:
-        return   # discovery pass — Settings isn't loaded yet
 
     field = getattr(settings, "<your_setting>", None)
     if not field:
@@ -102,19 +95,19 @@ Minimum test coverage:
 
 1. **Smoke test** — `adapter = <Adapter>(...); await adapter.startup(None); assert await adapter.ready()`.
 2. **Contract round-trip** — implement the protocol's main verbs and assert against the in-memory reference where possible.
-3. **`plugin(settings)` entry point** — pass a minimal Settings-like object and assert `register` was called.
+3. **`plugin(settings)` helper** — pass a minimal Settings-like object and assert `register` was called.
 
 If the adapter wraps a network service (Redis, S3, Postgres), use a stub or a `testcontainers` integration test. Don't require live credentials in CI.
 
-## Wire CI
+## Add dependencies
 
-The package inherits the monorepo's CI workflow — `pnpm test` runs every package's pytest. You usually don't need to add a workflow file.
-
-If your package needs extra dependencies for tests (e.g. `testcontainers`), add them under `[dependency-groups] dev` in the package's `pyproject.toml`.
+Add runtime dependencies under `[project.optional-dependencies]` in
+`packages/causeway/pyproject.toml`. Add test-only dependencies under
+`[dependency-groups] dev`.
 
 ## Document it
 
-In the package's own `README.md`:
+In the relevant docs page:
 
 - One paragraph on what backend this wraps and why someone would pick it over alternatives.
 - The settings fields it reads.
@@ -124,16 +117,16 @@ If your adapter has noteworthy contract behavior (cron not supported, eager mode
 
 ## Promote in the main docs
 
-If the plugin is meant to be official:
+If the adapter is meant to be official:
 
-1. Add it to the "Naming convention" / "shipping set" list in [Plugins](../app/plugins.md).
-2. Add it to the package table in the root [`README.md`](../../README.md) when it's stable.
-3. Update [`ROADMAP.md`](../../ROADMAP.md) — move the package from "planned" to "shipped".
+1. Add it to the built-in extras list in [Plugins](../app/plugins.md).
+2. Mention the extra in the relevant user docs.
+3. Update [`ROADMAP.md`](../../ROADMAP.md) — move the adapter from "planned" to "shipped".
 
 If it's a third-party plugin (not part of the official set), the right place is the curated registry on the docs site (forthcoming) — not the in-repo lists.
 
 ## Ship it
 
-The package follows the same release flow as core (see [`releases.md`](./releases.md)). Conventional Commits scope the bump, release-please opens the release PR, the publish workflow ships to PyPI.
-
-The first release should be `0.1.0a0` (alpha). Stabilize at `0.1.0` once the API has settled.
+Bundled adapters ship with `causeway` and follow the core release flow.
+Conventional Commits scope the bump, release-please opens the release PR, and
+the publish workflow ships one PyPI package.

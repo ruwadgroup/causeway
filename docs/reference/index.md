@@ -80,7 +80,7 @@ Every public symbol Causeway exports, on its own page. Organized by kind: decora
 | [`causeway plugins`](./cli/plugins.md)              | List registered plugin adapters.                         |
 | [`causeway plugin new <name>`](./cli/plugin-new.md) | Scaffold a new plugin package.                           |
 | [`causeway diff <a> <b>`](./cli/diff.md)            | Compare two IR snapshots and flag breaking changes.      |
-| [`causeway deploy <target>`](./cli/deploy.md)       | Invoke the relevant deploy plugin.                       |
+| [`causeway deploy <target>`](./cli/deploy.md)       | Invoke the relevant deploy adapter.                      |
 | [`causeway version`](./cli/version.md)              | Print the installed version.                             |
 
 ## Module map

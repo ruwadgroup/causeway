@@ -1,48 +1,72 @@
 # Plugins
 
-Causeway is plugins-not-batteries by design. Everything Causeway deliberately doesn't ship — ORMs, auth, storage, mail, caches, search, rate limiting, payments, observability, deploy targets — lives behind a **contract** in `causeway.contracts`, with one or more reference adapters as separate packages.
+Causeway is contracts-first by design. Everything outside the framework core
+— ORMs, auth, storage, mail, caches, search, rate limiting, payments,
+observability, deploy targets — lives behind a **contract** in
+`causeway.contracts`.
 
-## The shape of a plugin
+Official adapters ship inside `causeway.contrib` and install their third-party
+dependencies through extras like `causeway[s3]`, `causeway[redis]`, and
+`causeway[dramatiq]`. Third-party adapters can still publish separate packages
+and auto-load through entry points.
 
-A plugin is a Python package that:
+## The shape of an adapter
+
+An adapter:
 
 1. **Implements one or more contracts** declared in `causeway.contracts`.
-2. **Exposes a `plugin(settings)` callable** as a `causeway.plugins` entry point.
+2. **Registers with `causeway.register(...)`**, either directly from
+   `plugins.py` or through a third-party package entry point.
 3. **Declares the contract version** it targets.
 
-That's the whole surface a plugin author has to learn.
+That's the whole surface an adapter author has to learn.
 
-## Two installation paths
+## Two registration paths
 
-### Entry points (automatic)
+### Built-in adapters
 
-Any installed package that declares a `causeway.plugins` entry point auto-loads at startup:
+Install the extra that matches the adapter, then register it from
+`src/app/plugins.py`:
 
-```toml
-# causeway-storage-s3/pyproject.toml
-[project.entry-points."causeway.plugins"]
-storage-s3 = "causeway_storage_s3:plugin"
+```bash
+uv add "causeway[s3]"
 ```
 
 ```python
-# causeway_storage_s3/__init__.py
 from causeway import register
-from .store import S3Storage
+from causeway.contrib.s3 import S3Storage
 
-def plugin(settings):
-    register(S3Storage(bucket=settings.s3_bucket))
+register(S3Storage(bucket="uploads"))
 ```
 
-Install (`uv add causeway-storage-s3`) and it works. No explicit wiring needed.
+### Entry points (third-party packages)
+
+Any installed package that declares a `causeway.plugins` entry point auto-loads
+at startup:
+
+```toml
+# causeway-contrib-minio/pyproject.toml
+[project.entry-points."causeway.plugins"]
+minio = "causeway_contrib_minio:plugin"
+```
+
+```python
+# causeway_contrib_minio/__init__.py
+from causeway import register
+from .store import MinioStorage
+
+def plugin(settings):
+    register(MinioStorage(bucket=settings.minio_bucket))
+```
 
 ### Explicit `register()` (when you need args or ordering)
 
 ```python
 # src/app/plugins.py
 from causeway import register, env
-from causeway_tasks_dramatiq import DramatiqAdapter
-from causeway_storage_s3 import S3Storage
-from causeway_observe_sentry import SentryObserver
+from causeway.contrib.dramatiq import DramatiqAdapter
+from causeway.contrib.s3 import S3Storage
+from causeway.contrib.sentry import SentryObserver
 from app.config import settings
 
 
@@ -56,7 +80,9 @@ if env() == "prod":
 
 ## Built-in contracts
 
-Each contract ships with a reference adapter in core (`causeway.adapters`) or in a sibling package. Picking a real backend is a one-line swap.
+Each contract ships with a reference adapter in core (`causeway.adapters`) or an
+official adapter under `causeway.contrib`. Picking a real backend is a one-line
+swap.
 
 | Contract       | Method surface                                             | Reference                         |
 | -------------- | ---------------------------------------------------------- | --------------------------------- |
@@ -72,9 +98,9 @@ Each contract ships with a reference adapter in core (`causeway.adapters`) or in
 | `LogSink`      | `emit(record)`                                             | stdout via `structlog`            |
 | `PubSub`       | `publish`, `subscribe`                                     | none                              |
 | `AuthProvider` | `current_user`, `login`, `logout`, `verify`                | bring your own                    |
-| `DBSession`    | `session`, `transaction`, `health`                         | provided by ORM plugins           |
+| `DBSession`    | `session`, `transaction`, `health`                         | provided by ORM adapters          |
 | `BlobScanner`  | `scan(stream)` — virus / type checks                       | none                              |
-| `DeployTarget` | `manifest`, `package`, `push(target)`                      | provided by deploy plugins        |
+| `DeployTarget` | `manifest`, `package`, `push(target)`                      | provided by deploy adapters       |
 
 Contract types live in `causeway.contracts`. All are `typing.Protocol`s — duck-typed.
 
@@ -140,28 +166,28 @@ $ causeway plugins
 ┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Adapter          ┃ Contract version  ┃ Module               ┃
 ┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
-│ DramatiqAdapter  │ v1.0              │ causeway_tasks_dramatiq  │
-│ S3Storage        │ v1.0              │ causeway_storage_s3      │
-│ RedisCache       │ v1.0              │ causeway_cache_redis     │
-│ SmtpMailer       │ v1.0              │ causeway_mailer_smtp     │
+│ DramatiqAdapter  │ v1.0              │ causeway.contrib.dramatiq  │
+│ S3Storage        │ v1.0              │ causeway.contrib.s3      │
+│ RedisCache       │ v1.0              │ causeway.contrib.redis     │
+│ SmtpMailer       │ v1.0              │ causeway.contrib.smtp     │
 └──────────────────┴───────────────────┴──────────────────────┘
 ```
 
 Same view at `http://localhost:8000/__causeway` while `causeway dev` is running. `/readyz` returns 503 with a per-plugin status JSON until every plugin's `ready()` returns true.
 
-## Naming convention
+## Built-in extras
 
-Official plugins use `causeway-<role>-<impl>`. The current shipping set:
+Official adapters use short extras and matching `causeway.contrib` modules:
 
-- **tasks**: `causeway-tasks-dramatiq`
-- **storage**: `causeway-storage-fs`, `causeway-storage-s3`
-- **cache**: `causeway-cache-redis`
-- **auth**: `causeway-auth-jwt`
-- **mailer**: `causeway-mailer-smtp`
-- **observe**: `causeway-observe-sentry`
-- **flags**: `causeway-flags-growthbook`
-- **db**: `causeway-db-sqlmodel`
-- **deploy**: `causeway-deploy-docker`, `causeway-deploy-fly`, `causeway-deploy-modal`
+- **tasks**: `causeway[dramatiq]` -> `causeway.contrib.dramatiq`
+- **storage**: `causeway[fs]`, `causeway[s3]` -> `causeway.contrib.fs`, `causeway.contrib.s3`
+- **cache**: `causeway[redis]` -> `causeway.contrib.redis`
+- **auth**: `causeway[jwt]` -> `causeway.contrib.jwt`
+- **mailer**: `causeway[smtp]` -> `causeway.contrib.smtp`
+- **observe**: `causeway[sentry]` -> `causeway.contrib.sentry`
+- **flags**: `causeway[growthbook]` -> `causeway.contrib.growthbook`
+- **db**: `causeway[sqlmodel]` -> `causeway.contrib.sqlmodel`
+- **deploy**: `causeway[docker]`, `causeway[fly]`, `causeway[modal]` -> `causeway.contrib.docker`, `causeway.contrib.fly`, `causeway.contrib.modal`
 
 Third-party plugins should use `causeway-contrib-<thing>` to avoid implying official status.
 

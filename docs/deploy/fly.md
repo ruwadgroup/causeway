@@ -1,11 +1,11 @@
 # Deploying to Fly.io
 
-Via the `causeway-deploy-fly` plugin.
+Via the `causeway[fly]` adapter.
 
 ## Install
 
 ```bash
-uv add causeway-deploy-fly
+uv add "causeway[fly]"
 brew install flyctl
 fly auth login
 ```
@@ -15,7 +15,7 @@ fly auth login
 ```python
 # src/app/plugins.py
 from causeway import register
-from causeway_deploy_fly import FlyDeploy
+from causeway.contrib.fly import FlyDeploy
 
 register(FlyDeploy(
     app_name="my-app",
