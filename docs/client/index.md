@@ -137,12 +137,10 @@ This is intentionally small. Causeway does not add `changes=...`, resource keys,
 
 Every adapter uses the same generated route-key client:
 
-| Framework | Guide                 | Surface                                           |
-| --------- | --------------------- | ------------------------------------------------- |
-| React     | [React](./react.md)   | `CausewayProvider`, `useQuery`, `useMutation`     |
-| Next.js   | [Next.js](./next.md)  | server client, `prefetch`, `dehydrate`, `hydrate` |
-| Svelte    | [Svelte](./svelte.md) | `query`, `mutation`, `subscription` stores        |
-| Solid     | [Solid](./solid.md)   | `query`, `mutation`, `subscription` resources     |
+| Framework | Guide                | Surface                                           |
+| --------- | -------------------- | ------------------------------------------------- |
+| React     | [React](./react.md)  | `CausewayProvider`, `useQuery`, `useMutation`     |
+| Next.js   | [Next.js](./next.md) | server client, `prefetch`, `dehydrate`, `hydrate` |
 
 The runtime behavior is shared: stable query keys, dedupe, aborts, typed errors, hydration, and backend-declared `refreshes`.
 

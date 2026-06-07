@@ -62,7 +62,7 @@ class TaskAdapter(Plugin, Protocol):
 
 `v1.1` adds `cancel(task_id, *, grace)`. Cooperative first — the task body polls [`cancel_requested`](../functions/cancel-requested.md) (or awaits [`raise_if_cancelled`](../functions/raise-if-cancelled.md)) and exits. After `grace` seconds, the adapter hard-cancels the underlying runner. Returns `True` if a cancel was issued, `False` if the task is unknown or already terminal. Adapters that can't honestly cancel (e.g. Dramatiq without a coordinated worker protocol) raise `NotImplementedError`.
 
-Reference: `causeway.tasks.InMemoryAdapter`. Real adapters: `causeway-tasks-dramatiq`.
+Reference: `causeway.tasks.InMemoryAdapter`. Real adapters: `causeway[dramatiq]`.
 
 ---
 
@@ -119,7 +119,7 @@ class Storage(Plugin, Protocol):
     async def list(self, prefix: str = "") -> AsyncIterator[str]: ...
 ```
 
-Reference: `causeway.adapters.LocalStorage`. Real adapters: `causeway-storage-fs`, `causeway-storage-s3`.
+Reference: `causeway.adapters.LocalStorage`. Real adapters: `causeway[fs]`, `causeway[s3]`.
 
 ---
 
@@ -134,7 +134,7 @@ class KV(Plugin, Protocol):
     async def expire(self, key: str, ttl: int) -> None: ...
 ```
 
-Reference: `causeway.adapters.MemoryKV`. Real adapters: `causeway-cache-redis`.
+Reference: `causeway.adapters.MemoryKV`. Real adapters: `causeway[redis]`.
 
 ---
 
@@ -161,7 +161,7 @@ class Mailer(Plugin, Protocol):
     async def verify_address(self, address: str) -> bool: ...
 ```
 
-Real adapters: `causeway-mailer-smtp`. No in-core reference.
+Real adapters: `causeway[smtp]`. No in-core reference.
 
 ---
 
@@ -197,7 +197,7 @@ class FeatureFlags(Plugin, Protocol):
     async def refresh(self) -> None: ...
 ```
 
-Reference: `causeway.adapters.StaticFlags` (reads `Settings.feature_flags`). Real adapters: `causeway-flags-growthbook`.
+Reference: `causeway.adapters.StaticFlags` (reads `Settings.feature_flags`). Real adapters: `causeway[growthbook]`.
 
 ---
 
@@ -245,7 +245,7 @@ class DBSession(Plugin, Protocol):
     async def health(self) -> bool: ...
 ```
 
-Real adapters: `causeway-db-sqlmodel`.
+Real adapters: `causeway[sqlmodel]`.
 
 ---
 
@@ -259,7 +259,7 @@ class AuthProvider(Plugin, Protocol):
     async def verify(self, token: str) -> Any | None: ...
 ```
 
-Real adapters: `causeway-auth-jwt`.
+Real adapters: `causeway[jwt]`.
 
 ---
 
@@ -281,7 +281,7 @@ class DeployTarget(Plugin, Protocol):
     async def push(self, target: str) -> str: ...
 ```
 
-Real adapters: `causeway-deploy-docker`, `causeway-deploy-fly`, `causeway-deploy-modal`.
+Real adapters: `causeway[docker]`, `causeway[fly]`, `causeway[modal]`.
 
 ---
 

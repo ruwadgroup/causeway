@@ -65,7 +65,7 @@ uv run pytest
 - **One file per HTTP shape.** `index.py` owns `GET`/`POST` on the
   collection; `$id.py` owns the item.
 - **Typed errors flow to the client.** `@raises(NotFound)` /
-  `@raises(BadRequest)` tell `dyadpy`'s codegen that the generated TS
+  `@raises(BadRequest)` tell Causeway's codegen that the generated TS
   client should expose those branches in its `Result<T, E>` union. The
   HTTP response is always 200; success/failure lives inside the envelope
   (`{"ok": true, "data": ...}` vs `{"ok": false, "error": {...}}`).

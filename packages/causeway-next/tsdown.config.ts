@@ -8,5 +8,7 @@ export default defineConfig({
   sourcemap: true,
   target: "es2022",
   clean: true,
-  external: ["@causewayjs/client", "@causewayjs/react", "react", "react-dom"],
+  deps: {
+    neverBundle: ["@causewayjs/client", "@causewayjs/react", "react", "react-dom"],
+  },
 });

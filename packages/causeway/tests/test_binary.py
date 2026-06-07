@@ -52,7 +52,7 @@ def test_nuitka_command_includes_required_packages_and_excludes_dev_surface() ->
         entry=Path("/tmp/entry.py"),
         out_dir=Path("/tmp/out"),
         binary_name="tinyapp-0.4.2-linux-x86_64",
-        plugin_packages=("causeway_storage_s3", "causeway_db_sqlmodel"),
+        plugin_packages=("causeway.contrib.s3", "causeway.contrib.sqlmodel"),
         extra_packages=(),
         user_app_package="app",
     )
@@ -60,7 +60,7 @@ def test_nuitka_command_includes_required_packages_and_excludes_dev_surface() ->
 
     for required in ("causeway", "starlette", "uvicorn", "msgspec", "app"):
         assert f"--include-package={required}" in joined
-    for plugin in ("causeway_storage_s3", "causeway_db_sqlmodel"):
+    for plugin in ("causeway.contrib.s3", "causeway.contrib.sqlmodel"):
         assert f"--include-package={plugin}" in joined
     for dev_mod in _DEV_SURFACE_EXCLUDES:
         assert f"--nofollow-import-to={dev_mod}" in joined
@@ -76,13 +76,13 @@ def test_collect_plugin_packages_parses_frozen_plugins(tmp_path: Path) -> None:
     pkg.mkdir(parents=True)
     (pkg / "_frozen_plugins.py").write_text(
         "from __future__ import annotations\n"
-        "from causeway_storage_s3 import plugin as _EP_a\n"
-        "from causeway_db_sqlmodel import plugin as _EP_b\n"
+        "from causeway.contrib.s3 import plugin as _EP_a\n"
+        "from causeway.contrib.sqlmodel import plugin as _EP_b\n"
         "from some.nested.path import f as _EP_c\n",
     )
     assert _collect_plugin_packages(manifest=None, freeze_out=freeze_out) == (
-        "causeway_db_sqlmodel",
-        "causeway_storage_s3",
+        "causeway.contrib.s3",
+        "causeway.contrib.sqlmodel",
         "some",
     )
 

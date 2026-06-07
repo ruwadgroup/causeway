@@ -1,11 +1,11 @@
 # Deploying to Modal
 
-Via the `causeway-deploy-modal` plugin.
+Via the `causeway[modal]` adapter.
 
 ## Install
 
 ```bash
-uv add causeway-deploy-modal
+uv add "causeway[modal]"
 modal token new
 ```
 
@@ -14,7 +14,7 @@ modal token new
 ```python
 # src/app/plugins.py
 from causeway import register
-from causeway_deploy_modal import ModalDeploy
+from causeway.contrib.modal import ModalDeploy
 
 register(ModalDeploy(
     name="my-app",

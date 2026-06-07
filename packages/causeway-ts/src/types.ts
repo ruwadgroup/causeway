@@ -66,6 +66,8 @@ export interface ClientConfig {
   scope?: unknown;
 }
 
+export type RouteInputValue = Record<string, unknown> | void;
+
 export interface QueryState<TData = unknown, TError = unknown> {
   data?: TData;
   error: TError | null;
@@ -75,7 +77,7 @@ export interface QueryState<TData = unknown, TError = unknown> {
 
 export interface DehydratedQuery {
   routeKey: string;
-  input: unknown;
+  input: RouteInputValue;
   scope: unknown;
   data: unknown;
   updatedAt: number;
@@ -96,43 +98,32 @@ export interface HydrateOptions {
 export interface CausewayClient {
   query<TData = unknown>(
     routeKey: string,
-    input?: Record<string, unknown> | void,
+    input?: RouteInputValue,
     opts?: CallOptions,
   ): Promise<TData>;
   mutate<TData = unknown>(
     routeKey: string,
-    input?: Record<string, unknown> | void,
+    input?: RouteInputValue,
     opts?: CallOptions,
   ): Promise<TData>;
   refresh<TData = unknown>(
     routeKey: string,
-    input?: Record<string, unknown> | void,
+    input?: RouteInputValue,
     opts?: CallOptions,
   ): Promise<TData>;
   stream<TEvent = unknown>(
     routeKey: string,
-    input?: Record<string, unknown> | void,
+    input?: RouteInputValue,
     opts?: CallOptions,
   ): AsyncIterable<TEvent>;
-  getData<TData = unknown>(
-    routeKey: string,
-    input?: Record<string, unknown> | void,
-  ): TData | undefined;
-  setData<TData = unknown>(
-    routeKey: string,
-    input: Record<string, unknown> | void,
-    data: TData,
-  ): void;
+  getData<TData = unknown>(routeKey: string, input?: RouteInputValue): TData | undefined;
+  setData<TData = unknown>(routeKey: string, input: RouteInputValue, data: TData): void;
   getQueryState<TData = unknown, TError = unknown>(
     routeKey: string,
-    input?: Record<string, unknown> | void,
+    input?: RouteInputValue,
   ): QueryState<TData, TError>;
-  subscribe(
-    routeKey: string,
-    input: Record<string, unknown> | void,
-    listener: () => void,
-  ): () => void;
-  queryKey(routeKey: string, input?: Record<string, unknown> | void): string;
+  subscribe(routeKey: string, input: RouteInputValue, listener: () => void): () => void;
+  queryKey(routeKey: string, input?: RouteInputValue): string;
   dehydrate(): DehydratedClient;
   hydrate(snapshot: DehydratedClient, options?: HydrateOptions): void;
 }

@@ -2,23 +2,25 @@
 
 export {
   CausewayProvider,
-  registerCausewayHydrationSnapshot,
   useCausewayClient,
   useOptionalCausewayClient,
-  useMutation,
-  useQuery,
-  useSubscription,
   type CausewayFeedback,
   type CausewayProviderProps,
+} from "./context.js";
+export { registerCausewayHydrationSnapshot } from "./hydration.js";
+export { useQuery, type QueryHookOptions, type QueryHookResult } from "./use-query.js";
+export {
+  useMutation,
   type MutationFeedback,
   type MutationHookOptions,
   type MutationHookResult,
-  type QueryHookOptions,
-  type QueryHookResult,
+} from "./use-mutation.js";
+export {
+  useSubscription,
   type SubscriptionHookOptions,
   type SubscriptionHookResult,
   type SubscriptionStatus,
-} from "./route-hooks.js";
+} from "./use-subscription.js";
 
 export { queryOptions } from "@causewayjs/client";
 export type { QueryOptions } from "@causewayjs/client";

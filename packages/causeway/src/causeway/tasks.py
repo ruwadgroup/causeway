@@ -1,9 +1,9 @@
 """Background tasks.
 
 The :func:`task` decorator marks a coroutine, the :func:`cron` decorator
-schedules one, and :class:`InMemoryAdapter` is the reference broker. Real
-adapters (Dramatiq, Celery) live in sibling packages and replace the
-in-memory one via the plugin registry.
+schedules one, and :class:`InMemoryAdapter` is the reference broker.
+Production adapters such as Dramatiq live under :mod:`causeway.contrib` and
+replace the in-memory one via the plugin registry.
 """
 
 from __future__ import annotations

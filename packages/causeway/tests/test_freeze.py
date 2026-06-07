@@ -291,7 +291,7 @@ async def test_frozen_app_serves_requests(tmp_path: Path) -> None:
         r2 = await client.get("/echo/world")
 
     assert r1.status_code == 200
-    # dyadpy wraps successful responses in {ok, data}; raw bodies are
+    # Causeway wraps successful responses in {ok, data}; raw bodies are
     # also valid for handlers that opt out.
     assert r1.json().get("data", r1.json()) == {"status": "ok"}
     assert r2.status_code == 200

@@ -56,7 +56,7 @@ direct-messaging the maintainer
 ([@tamimbinhakim](https://github.com/tamimbinhakim)) on GitHub. All reports
 will be reviewed and investigated promptly and fairly.
 
-[report]: https://github.com/tamimbinhakim/causeway/security/advisories/new
+[report]: https://github.com/ruwadgroup/causeway/security/advisories/new
 
 ## Attribution
 

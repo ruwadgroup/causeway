@@ -132,11 +132,11 @@ cosign verify-blob \
 
 ## Containerizing the binary
 
-The `causeway-deploy-docker` plugin emits a `FROM scratch` Dockerfile in
+The `causeway[docker]` adapter emits a `FROM scratch` Dockerfile in
 binary mode:
 
 ```python
-from causeway_deploy_docker import DockerDeploy
+from causeway.contrib.docker import DockerDeploy
 
 DockerDeploy().package(
     target_dir="dist",
@@ -169,6 +169,6 @@ distroless attack surface gets you ahead of the typical
 - **Cross-compilation isn't supported.** Build on the same OS/arch you
   ship to. Use a matrix in CI.
 - **Plugins that do runtime importlib magic** (rare, but
-  `causeway-flags-growthbook` does some) may need explicit
+  `causeway[growthbook]` does some) may need explicit
   `--include-package` hints. Pass them via the `extra_packages` argument
   to `build_binary()` or open an issue with the plugin.

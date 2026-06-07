@@ -96,7 +96,7 @@ The IR is consumed by:
 - **The typed-client codegen** — generates the TypeScript client off the
   IR snapshot.
 - **`causeway diff`** — the CI breaking-change checker.
-- **`causeway-deploy-*`** — deploy adapters that need to know "which routes
+- **Deploy adapters** — adapters that need to know "which routes
   are streaming", "which tasks are long-running" to set timeouts
   correctly.
 - **Third-party tools** — anything that wants to introspect a Causeway app

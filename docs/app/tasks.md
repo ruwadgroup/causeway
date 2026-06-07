@@ -1,6 +1,8 @@
 # Background tasks
 
-Causeway defines a `TaskAdapter` contract in core and ships `InMemoryAdapter` as the reference. Real adapters (Dramatiq, Celery, Arq, TaskIQ) live in sibling packages — pick one with a single line in `plugins.py`.
+Causeway defines a `TaskAdapter` contract in core and ships `InMemoryAdapter`
+as the reference. The Dramatiq adapter ships as `causeway[dramatiq]`; other
+task backends can plug into the same contract.
 
 ## Defining a task
 
@@ -62,7 +64,7 @@ Standard 5-field crontab syntax. The cron loop is owned by the adapter — Drama
 ```python
 # src/app/plugins.py
 from causeway import register
-from causeway_tasks_dramatiq import DramatiqAdapter
+from causeway.contrib.dramatiq import DramatiqAdapter
 
 register(DramatiqAdapter(broker_url="redis://localhost"))
 ```
@@ -82,7 +84,7 @@ Periodiq, so it must run alongside the worker.
 Swap to Celery in one line:
 
 ```python
-from causeway_tasks_celery import CeleryAdapter
+from causeway_contrib_celery import CeleryAdapter
 
 register(CeleryAdapter(broker_url="redis://localhost"))
 ```

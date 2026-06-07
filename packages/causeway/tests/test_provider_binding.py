@@ -19,7 +19,7 @@ def _write(root: Path, rel: str, body: str) -> None:
 async def test_annotated_provider_is_rewritten(tmp_path: Path) -> None:
     """When a route handler references a scope provider via
     ``Annotated[T, provider]``, the file router rewrites it to
-    ``Annotated[T, Depends(provider)]`` so dyadpy can resolve the dep.
+    ``Annotated[T, Depends(provider)]`` so Causeway can resolve the dep.
     """
     routes = tmp_path / "routes"
     _write(

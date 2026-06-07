@@ -241,7 +241,7 @@ def test_load_route_emits_one_import_per_chunk_not_per_route() -> None:
     # Bundlers (Turbopack especially) track every `import(...)` call site as a
     # separate code-split computation in their persistent cache. The loader
     # must dedupe to one import per chunk file or the cache explodes on apps
-    # with hundreds of routes — see https://github.com/tamimbinhakim/causeway.
+    # with hundreds of routes — see https://github.com/ruwadgroup/causeway.
     app = App()
 
     @app.get("/users")

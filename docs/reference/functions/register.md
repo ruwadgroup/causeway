@@ -5,7 +5,7 @@ Register a plugin adapter with the framework.
 ```python
 # src/app/plugins.py
 from causeway import register
-from causeway_tasks_dramatiq import DramatiqAdapter
+from causeway.contrib.dramatiq import DramatiqAdapter
 
 register(DramatiqAdapter(broker_url="redis://localhost"))
 ```
@@ -29,7 +29,9 @@ register(adapter: Plugin) -> None
 
 In `src/app/plugins.py`. Causeway loads this module once at boot, after `src/app/config.py`.
 
-For entry-point auto-loaded plugins, the package's own `plugin(settings)` function calls `register()` for you — see [Plugin authoring](../../app/plugin-authoring.md).
+Bundled adapters under `causeway.contrib` are usually registered here directly.
+For third-party entry-point plugins, the package's own `plugin(settings)`
+function calls `register()` for you — see [Plugin authoring](../../app/plugin-authoring.md).
 
 ## Common patterns
 
@@ -45,7 +47,7 @@ else:
     register(LocalStorage(path="./tmp/uploads"))
 ```
 
-**Overriding an auto-loaded plugin:**
+**Overriding an entry-point plugin:**
 
 Register your own adapter for the same contract after the entry-point scan — later registrations override earlier ones for the same contract slot.
 

@@ -2,14 +2,14 @@
 
 A Causeway app is **an ASGI app + a manifest**. It runs anywhere ASGI runs — Docker, Fly, Modal, Lambda (via Mangum), bare uvicorn behind nginx, your own Kubernetes cluster.
 
-The framework doesn't own deploys. Three official plugins wrap the common targets so you don't have to write Dockerfiles by hand:
+The framework doesn't own deploys. Three official adapters wrap the common targets so you don't have to write Dockerfiles by hand:
 
-- **[Docker](./docker.md)** — `causeway-deploy-docker`. Builds an image from your project.
-- **[Fly.io](./fly.md)** — `causeway-deploy-fly`. Wraps `flyctl` deploy.
-- **[Modal](./modal.md)** — `causeway-deploy-modal`. Wraps the Modal SDK for ephemeral function-as-a-service.
+- **[Docker](./docker.md)** — `causeway[docker]`. Builds an image from your project.
+- **[Fly.io](./fly.md)** — `causeway[fly]`. Wraps `flyctl` deploy.
+- **[Modal](./modal.md)** — `causeway[modal]`. Wraps the Modal SDK for ephemeral function-as-a-service.
 - **[Binary export](./binary.md)** — `causeway build --binary`. Single AOT-compiled executable for self-hosting; pairs with `FROM scratch` containers.
 
-Every deploy plugin implements the [`DeployTarget`](../reference/classes/contracts.md#deploytarget) contract — `manifest()`, `package()`, `push(target)`.
+Every deploy adapter implements the [`DeployTarget`](../reference/classes/contracts.md#deploytarget) contract — `manifest()`, `package()`, `push(target)`.
 
 ## Generic process
 
@@ -20,7 +20,7 @@ causeway build                            # emit dist/ir.json + client/ + wheel
 causeway deploy <target>                  # plugin reads dist/ and pushes
 ```
 
-The plugin produces the target-specific artifact (Dockerfile + image, Fly machine spec, Modal stub) from the project shape. You don't write target-specific glue.
+The adapter produces the target-specific artifact (Dockerfile + image, Fly machine spec, Modal stub) from the project shape. You don't write target-specific glue.
 
 ## What gets deployed
 
@@ -33,7 +33,7 @@ dist/
 
 ## Manual deployment
 
-Without a deploy plugin:
+Without a deploy adapter:
 
 ```bash
 causeway build

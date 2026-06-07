@@ -5,15 +5,15 @@ A Causeway plugin is one Python package that implements one or more contracts fr
 ## Scaffold one
 
 ```bash
-causeway plugin new causeway-mailer-resend
+causeway plugin new causeway-contrib-resend
 ```
 
 This creates:
 
 ```
-causeway-mailer-resend/
+causeway-contrib-resend/
 ├── pyproject.toml
-├── src/causeway_mailer_resend/
+├── src/causeway_contrib_resend/
 │   ├── __init__.py
 │   └── adapter.py
 └── tests/
@@ -25,7 +25,7 @@ Pre-wired entry point in `pyproject.toml`, a smoke test that mounts a `TestApp` 
 ## Implement the contract
 
 ```python
-# src/causeway_mailer_resend/adapter.py
+# src/causeway_contrib_resend/adapter.py
 from typing import Any, ClassVar
 from resend import Resend
 
@@ -64,7 +64,7 @@ class ResendMailer:
 ## Wire the entry point
 
 ```python
-# src/causeway_mailer_resend/__init__.py
+# src/causeway_contrib_resend/__init__.py
 from causeway import register
 from .adapter import ResendMailer
 
@@ -76,14 +76,14 @@ def plugin(settings):
 ```toml
 # pyproject.toml
 [project]
-name = "causeway-mailer-resend"
+name = "causeway-contrib-resend"
 dependencies = ["causeway>=0.1,<2.0", "resend>=1.0"]
 
 [project.entry-points."causeway.plugins"]
-mailer-resend = "causeway_mailer_resend:plugin"
+resend = "causeway_contrib_resend:plugin"
 ```
 
-Once installed (`uv add causeway-mailer-resend`), Causeway calls `plugin(settings)` at startup; `register()` adds the adapter; lifecycle takes over.
+Once installed (`uv add causeway-contrib-resend`), Causeway calls `plugin(settings)` at startup; `register()` adds the adapter; lifecycle takes over.
 
 ## Contributing settings fields
 
@@ -126,7 +126,7 @@ Causeway refuses to boot if `requires` aren't met. Use this when your adapter is
 # tests/test_smoke.py
 import pytest
 from causeway.testing import TestApp
-from causeway_mailer_resend import ResendMailer
+from causeway_contrib_resend import ResendMailer
 from causeway import register
 
 
@@ -164,11 +164,14 @@ Before publishing:
 
 ## Naming
 
-Use `causeway-<role>-<impl>` for official-pattern plugins (e.g. `causeway-mailer-resend`, `causeway-storage-r2`). Third-party plugins should use `causeway-contrib-<thing>` to make the boundary clear.
+Bundled official adapters live under `causeway.contrib` and install through
+extras. Third-party packages should use `causeway-contrib-<thing>` to make the
+boundary clear.
 
-## Submitting an official plugin
+## Submitting an official adapter
 
-The on-ramp for sibling `causeway-<role>-<impl>` packages lives in [`internals/plugin-authoring.md`](../internals/plugin-authoring.md).
+The on-ramp for bundled `causeway.contrib` adapters lives in
+[`internals/plugin-authoring.md`](../internals/plugin-authoring.md).
 
 ## Next
 

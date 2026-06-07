@@ -88,11 +88,13 @@ If `1.4.0` is in production and you need to ship `1.4.1` without picking up ever
 
 The hotfix branch is named `release/<major>.<minor>.x`. release-please knows that convention.
 
-## Plugin packages
+## Bundled adapters
 
-Each `packages/causeway-*` package is its own publishable Python package and gets its own release PR / changelog / tag. The plugin's contract version (`v1.0`, etc.) is independent of its package version — package version follows semver against the package's own surface, contract version follows the framework's contract surface.
-
-Plugins use the same flow: Conventional Commits scope the bump, release-please opens the PR, the publish workflow ships to PyPI.
+Official adapters ship inside the single `causeway` PyPI package under
+`causeway.contrib`. Their contract version (`v1.0`, etc.) is independent of
+the package version and follows the framework's contract surface. Conventional
+Commits still scope the bump, but release-please opens one release PR and the
+publish workflow ships one PyPI package.
 
 ## What you do not do
 

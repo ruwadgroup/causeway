@@ -15,14 +15,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Repack against `@causewayjs/client` 0.1.0-alpha.2.
 - Revalidate `useQuery` on mount by default without exposing stale cached data; opt into the old behavior with `keepPreviousData: true`.
 
-## [0.2.6-alpha.0](https://github.com/tamimbinhakim/causeway/compare/dyadpy-react-v0.2.5-alpha.0...causeway-react-v0.2.6-alpha.0) (2026-05-30)
+## [0.2.6-alpha.0](https://github.com/ruwadgroup/causeway/compare/dyadpy-react-v0.2.5-alpha.0...causeway-react-v0.2.6-alpha.0) (2026-05-30)
 
 ### Features
 
 - Publish the route-key React provider and hooks backed by `@causewayjs/client`.
 - Expose `useOptionalCausewayClient()` for integrations that can reuse a provider client when present.
 
-## [0.2.5-alpha.0](https://github.com/tamimbinhakim/causeway/compare/dyadpy-react-v0.2.2-alpha.0...dyadpy-react-v0.2.5-alpha.0) (2026-05-25)
+## [0.2.5-alpha.0](https://github.com/ruwadgroup/causeway/compare/dyadpy-react-v0.2.2-alpha.0...dyadpy-react-v0.2.5-alpha.0) (2026-05-25)
 
 ### ⚠ BREAKING CHANGES
 
@@ -35,21 +35,21 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   import full route descriptors just to construct the hook tree.
 - require `causeway-ts>=0.1.5-alpha.0` for the lazy generated-client runtime.
 
-## [0.2.2-alpha.0](https://github.com/tamimbinhakim/causeway/compare/dyadpy-react-v0.2.1-alpha.0...dyadpy-react-v0.2.2-alpha.0) (2026-05-21)
+## [0.2.2-alpha.0](https://github.com/ruwadgroup/causeway/compare/dyadpy-react-v0.2.1-alpha.0...dyadpy-react-v0.2.2-alpha.0) (2026-05-21)
 
 
 ### Bug Fixes
 
-* infer optional react route args ([7c689fe](https://github.com/tamimbinhakim/causeway/commit/7c689fe753d7957dd07f7603c3ffada6740930bc))
+* infer optional react route args ([7c689fe](https://github.com/ruwadgroup/causeway/commit/7c689fe753d7957dd07f7603c3ffada6740930bc))
 
-## [0.2.1-alpha.0](https://github.com/tamimbinhakim/causeway/compare/dyadpy-react-v0.2.0-alpha.0...dyadpy-react-v0.2.1-alpha.0) (2026-05-21)
+## [0.2.1-alpha.0](https://github.com/ruwadgroup/causeway/compare/dyadpy-react-v0.2.0-alpha.0...dyadpy-react-v0.2.1-alpha.0) (2026-05-21)
 
 
 ### Bug Fixes
 
-* preserve optional react route args ([a35e546](https://github.com/tamimbinhakim/causeway/commit/a35e5462eed948bed46dba54606c1e565420fe23))
+* preserve optional react route args ([a35e546](https://github.com/ruwadgroup/causeway/commit/a35e5462eed948bed46dba54606c1e565420fe23))
 
-## [0.2.0-alpha.0](https://github.com/tamimbinhakim/causeway/compare/dyadpy-react-v0.1.2-alpha.0...dyadpy-react-v0.2.0-alpha.0) (2026-05-21)
+## [0.2.0-alpha.0](https://github.com/ruwadgroup/causeway/compare/dyadpy-react-v0.1.2-alpha.0...dyadpy-react-v0.2.0-alpha.0) (2026-05-21)
 
 
 ### ⚠ BREAKING CHANGES
@@ -58,34 +58,34 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Features
 
-* **causeway-react:** tRPC-style nested client (createNestedClient) ([9cb4501](https://github.com/tamimbinhakim/causeway/commit/9cb45011f0c57aaa26c92230c81e5e0b456f0d76))
-* standardize nested typed clients ([93ad484](https://github.com/tamimbinhakim/causeway/commit/93ad484eb0785e0af07790afb7f939114646cb07))
+* **causeway-react:** tRPC-style nested client (createNestedClient) ([9cb4501](https://github.com/ruwadgroup/causeway/commit/9cb45011f0c57aaa26c92230c81e5e0b456f0d76))
+* standardize nested typed clients ([93ad484](https://github.com/ruwadgroup/causeway/commit/93ad484eb0785e0af07790afb7f939114646cb07))
 
 
 ### Bug Fixes
 
-* allow optional react query args ([c17cffb](https://github.com/tamimbinhakim/causeway/commit/c17cffb17b63270152f5acea4fb0f305a118f6c1))
-* improve react client ssr typing ([631cc83](https://github.com/tamimbinhakim/causeway/commit/631cc83d06bb4245cc6758c0002327a7c32a4dcd))
-* improve react query integration typing ([7d208f7](https://github.com/tamimbinhakim/causeway/commit/7d208f7ce05b0ea38bd532ba4b8d55b709ea629c))
+* allow optional react query args ([c17cffb](https://github.com/ruwadgroup/causeway/commit/c17cffb17b63270152f5acea4fb0f305a118f6c1))
+* improve react client ssr typing ([631cc83](https://github.com/ruwadgroup/causeway/commit/631cc83d06bb4245cc6758c0002327a7c32a4dcd))
+* improve react query integration typing ([7d208f7](https://github.com/ruwadgroup/causeway/commit/7d208f7ce05b0ea38bd532ba4b8d55b709ea629c))
 
 
 ### Refactor
 
-* **causeway-react:** single nested-client surface, drop flat shape ([efb6e05](https://github.com/tamimbinhakim/causeway/commit/efb6e05415a980f7b1aae0070990d2f14eefe735))
+* **causeway-react:** single nested-client surface, drop flat shape ([efb6e05](https://github.com/ruwadgroup/causeway/commit/efb6e05415a980f7b1aae0070990d2f14eefe735))
 
-## [0.1.2-alpha.0](https://github.com/tamimbinhakim/causeway/compare/dyadpy-react-v0.1.1-alpha.0...dyadpy-react-v0.1.2-alpha.0) (2026-05-20)
-
-
-### Features
-
-* **react:** add createReactClient ([a390a4e](https://github.com/tamimbinhakim/causeway/commit/a390a4e397fa62a3d738e6c2a957534d666ac5c6))
-
-## [0.1.1-alpha.0](https://github.com/tamimbinhakim/causeway/compare/dyadpy-react-v0.1.0-alpha.0...dyadpy-react-v0.1.1-alpha.0) (2026-05-20)
+## [0.1.2-alpha.0](https://github.com/ruwadgroup/causeway/compare/dyadpy-react-v0.1.1-alpha.0...dyadpy-react-v0.1.2-alpha.0) (2026-05-20)
 
 
 ### Features
 
-* **react:** document SSR prefetch support ([ffc6c3d](https://github.com/tamimbinhakim/causeway/commit/ffc6c3d2c6650f5d034fe06073a9b6f439740545))
+* **react:** add createReactClient ([a390a4e](https://github.com/ruwadgroup/causeway/commit/a390a4e397fa62a3d738e6c2a957534d666ac5c6))
+
+## [0.1.1-alpha.0](https://github.com/ruwadgroup/causeway/compare/dyadpy-react-v0.1.0-alpha.0...dyadpy-react-v0.1.1-alpha.0) (2026-05-20)
+
+
+### Features
+
+* **react:** document SSR prefetch support ([ffc6c3d](https://github.com/ruwadgroup/causeway/commit/ffc6c3d2c6650f5d034fe06073a9b6f439740545))
 
 ## [Unreleased]
 

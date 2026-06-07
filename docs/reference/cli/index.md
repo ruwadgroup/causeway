@@ -20,7 +20,7 @@ Commands:
   plugins                    List registered plugin adapters.
   plugin new <name>          Scaffold a new plugin package.
   diff <a> <b>               Compare two IR snapshots.
-  deploy <target>            Invoke the relevant deploy plugin.
+  deploy <target>            Invoke the relevant deploy adapter.
   version                    Print the installed version.
 ```
 

@@ -1,4 +1,4 @@
-"""End-to-end: discovered routes register onto a dyadpy.App and respond."""
+"""End-to-end: discovered routes register onto a Causeway runtime app and respond."""
 
 from __future__ import annotations
 

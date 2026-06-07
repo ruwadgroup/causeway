@@ -30,7 +30,7 @@ The longer design story is [Why Causeway](./why-causeway.md).
 | Lane                                  | Read when you are working on...                                                                  |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | **[Backend](./backend/index.md)**     | Route files, handlers, params, responses, errors, middleware, permissions, tenancy, idempotency. |
-| **[Client](./client/index.md)**       | Generated TypeScript, route keys, refreshes, React, Next.js, Svelte, Solid, App Graph.           |
+| **[Client](./client/index.md)**       | Generated TypeScript, route keys, refreshes, React, Next.js, App Graph.                          |
 | **[Application](./app/index.md)**     | Config, plugins, tasks, events, webhooks, subscribers, testing, observability.                   |
 | **[Deploy](./deploy/index.md)**       | Docker, Fly.io, Modal, binary builds, production shape.                                          |
 | **[Reference](./reference/index.md)** | Public API, CLI, decorators, functions, classes, file conventions.                               |
@@ -44,7 +44,7 @@ The longer design story is [Why Causeway](./why-causeway.md).
 | Read path params, query, body     | [Params and body](./backend/params-and-body.md)                                                                                   |
 | Return data and typed errors      | [Responses](./backend/responses.md), [errors](./backend/errors.md)                                                                |
 | Use the TypeScript client         | [Client runtime](./client/index.md)                                                                                               |
-| Use React, Next, Svelte, or Solid | [React](./client/react.md), [Next.js](./client/next.md), [Svelte](./client/svelte.md), [Solid](./client/solid.md)                 |
+| Use React or Next.js              | [React](./client/react.md), [Next.js](./client/next.md)                                                                           |
 | Refresh queries after a mutation  | [HTTP methods](./backend/methods.md#refresh-contracts), [client refreshes](./client/index.md#refreshes)                           |
 | Inspect what Causeway discovered  | [App Graph](./client/app-graph.md), [`causeway inspect`](./reference/cli/inspect.md)                                              |
 | Add auth, idempotency, or tenancy | [Permissions](./backend/permissions.md), [idempotency keys](./backend/idempotency.md), [multi-tenancy](./backend/multi-tenant.md) |
@@ -79,8 +79,6 @@ The longer design story is [Why Causeway](./why-causeway.md).
 - [Client runtime](./client/index.md)
 - [React](./client/react.md)
 - [Next.js](./client/next.md)
-- [Svelte](./client/svelte.md)
-- [Solid](./client/solid.md)
 - [App Graph](./client/app-graph.md)
 
 **Application Layer**
@@ -104,4 +102,4 @@ The longer design story is [Why Causeway](./why-causeway.md).
 - [Upgrading](./upgrading/index.md)
 - [Internals](./internals/README.md)
 
-Something confusing or missing? Open a [docs issue](https://github.com/tamimbinhakim/causeway/issues/new?labels=docs).
+Something confusing or missing? Open a [docs issue](https://github.com/ruwadgroup/causeway/issues/new?labels=docs).

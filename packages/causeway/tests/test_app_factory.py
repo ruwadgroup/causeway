@@ -141,7 +141,7 @@ async def r() -> dict:
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://t") as client:
         resp = await client.get("/")
-    # dyadpy serializes @raises into its typed Result envelope.
+    # Causeway serializes @raises into its typed Result envelope.
     assert resp.status_code == 404
     assert resp.json()["error"]["kind"] == "NotFound"
 

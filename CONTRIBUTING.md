@@ -10,7 +10,7 @@ annoying, open a PR fixing it — meta-contributions count.
 ## TL;DR
 
 ```bash
-git clone https://github.com/tamimbinhakim/causeway.git
+git clone https://github.com/ruwadgroup/causeway.git
 cd causeway
 pnpm install               # installs Node deps + sets up husky hooks
 uv sync                    # installs Python deps into .venv

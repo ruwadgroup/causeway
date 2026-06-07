@@ -124,7 +124,7 @@ For app-wide timing, install a class `Middleware` at the root.
 
 ```python
 # src/app/plugins.py
-from causeway_observe_sentry import SentryObserver
+from causeway.contrib.sentry import SentryObserver
 from causeway import register, env
 
 if env() == "prod":

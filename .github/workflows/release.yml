@@ -6,25 +6,13 @@ on:
   workflow_dispatch:
     inputs:
       package:
-        description: "PyPI package to publish, or all to publish every unpublished/current package."
+        description: "PyPI package to publish."
         required: true
         default: all
         type: choice
         options:
           - all
           - causeway
-          - causeway-auth-jwt
-          - causeway-cache-redis
-          - causeway-db-sqlmodel
-          - causeway-deploy-docker
-          - causeway-deploy-fly
-          - causeway-deploy-modal
-          - causeway-flags-growthbook
-          - causeway-mailer-smtp
-          - causeway-observe-sentry
-          - causeway-storage-fs
-          - causeway-storage-s3
-          - causeway-tasks-dramatiq
 
 # Default is read-only. release-please needs write, publishers need OIDC.
 permissions:
@@ -92,18 +80,6 @@ jobs:
       matrix:
         include:
           - { name: causeway, dir: causeway }
-          - { name: causeway-auth-jwt, dir: causeway-auth-jwt }
-          - { name: causeway-cache-redis, dir: causeway-cache-redis }
-          - { name: causeway-db-sqlmodel, dir: causeway-db-sqlmodel }
-          - { name: causeway-deploy-docker, dir: causeway-deploy-docker }
-          - { name: causeway-deploy-fly, dir: causeway-deploy-fly }
-          - { name: causeway-deploy-modal, dir: causeway-deploy-modal }
-          - { name: causeway-flags-growthbook, dir: causeway-flags-growthbook }
-          - { name: causeway-mailer-smtp, dir: causeway-mailer-smtp }
-          - { name: causeway-observe-sentry, dir: causeway-observe-sentry }
-          - { name: causeway-storage-fs, dir: causeway-storage-fs }
-          - { name: causeway-storage-s3, dir: causeway-storage-s3 }
-          - { name: causeway-tasks-dramatiq, dir: causeway-tasks-dramatiq }
     steps:
       - if: inputs.package == 'all' || inputs.package == matrix.name
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.0

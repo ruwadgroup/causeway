@@ -1,5 +1,10 @@
-import { parseSSE } from "./sse.js";
-import { buildError, CausewayError, unwrapResult } from "./types.js";
+// The route-key client: a tiny query cache + request orchestrator that the
+// framework bindings (`@causewayjs/react`, `@causewayjs/next`) sit on top of.
+// Wire encoding, SSE, and case conversion live in sibling modules; this file
+// owns identity (cache keys), in-flight dedup, refresh-after-mutation, and
+// dehydrate/hydrate.
+
+import { buildRequest, streamCall, unaryCall } from "./transport.js";
 import type {
   CallOptions,
   CausewayClient,
@@ -7,27 +12,31 @@ import type {
   DehydratedClient,
   HydrateOptions,
   QueryState,
-  Result,
   RouteDescriptor,
+  RouteInputValue,
   RouteMeta,
 } from "./types.js";
+import { unwrapResult } from "./types.js";
+import { argsFromInput, isAbortError, stableStringify } from "./utils.js";
 
-type Args = Record<string, unknown>;
-type FetchImpl = typeof globalThis.fetch;
 const EMPTY_QUERY_STATE: QueryState = Object.freeze({ error: null, pending: false });
+
+// Sentinel returned by `projectRefreshInput` when a parameterized refresh
+// can't be satisfied from the mutation's input — we skip it rather than fire a
+// request with a missing path param.
 const SKIP_REFRESH = Symbol("causeway.skipRefresh");
-type ProjectedRefreshInput = Record<string, unknown> | void | typeof SKIP_REFRESH;
+type ProjectedRefreshInput = RouteInputValue | typeof SKIP_REFRESH;
 
 interface QueryEntry {
   routeKey: string;
-  input: unknown;
+  input: RouteInputValue;
   scope: unknown;
   state: QueryState;
 }
 
 export function createRouteKeyClient(config: ClientConfig): CausewayClient {
   const baseUrl = (config.baseUrl ?? "").replace(/\/$/, "");
-  const fetchImpl: FetchImpl = config.fetch ?? globalThis.fetch.bind(globalThis);
+  const fetchImpl = config.fetch ?? globalThis.fetch.bind(globalThis);
   const descriptorCache = new Map<string, Promise<RouteDescriptor>>();
   const metaByRouteKey = new Map<string, RouteMeta>();
   const entries = new Map<string, QueryEntry>();
@@ -50,7 +59,7 @@ export function createRouteKeyClient(config: ClientConfig): CausewayClient {
 
   const fetchRoute = async (
     routeKey: string,
-    input: Record<string, unknown> | void,
+    input: RouteInputValue,
     opts: CallOptions,
     kind: "query" | "mutation",
   ): Promise<unknown> => {
@@ -59,7 +68,7 @@ export function createRouteKeyClient(config: ClientConfig): CausewayClient {
     const descriptor = await loadRoute(meta.id);
     const { url, init } = buildRequest(
       descriptor,
-      (input ?? {}) as Args,
+      argsFromInput(input),
       opts,
       baseUrl,
       config.headers,
@@ -70,7 +79,7 @@ export function createRouteKeyClient(config: ClientConfig): CausewayClient {
   const client: CausewayClient = {
     async query<TData = unknown>(
       routeKey: string,
-      input?: Record<string, unknown> | void,
+      input?: RouteInputValue,
       opts: CallOptions = {},
     ): Promise<TData> {
       const key = cacheKey(routeKey, input, scope);
@@ -82,14 +91,14 @@ export function createRouteKeyClient(config: ClientConfig): CausewayClient {
     },
     async refresh<TData = unknown>(
       routeKey: string,
-      input?: Record<string, unknown> | void,
+      input?: RouteInputValue,
       opts: CallOptions = {},
     ): Promise<TData> {
       return (await runQuery(routeKey, input, opts, true)) as TData;
     },
     async mutate<TData = unknown>(
       routeKey: string,
-      input?: Record<string, unknown> | void,
+      input?: RouteInputValue,
       opts: CallOptions = {},
     ): Promise<TData> {
       const data = await fetchRoute(routeKey, input, opts, "mutation");
@@ -101,12 +110,12 @@ export function createRouteKeyClient(config: ClientConfig): CausewayClient {
     },
     stream<TEvent = unknown>(
       routeKey: string,
-      input?: Record<string, unknown> | void,
+      input?: RouteInputValue,
       opts: CallOptions = {},
     ): AsyncIterable<TEvent> {
       return streamRoute<TEvent>(routeKey, input, opts);
     },
-    getData<TData = unknown>(routeKey: string, input?: Record<string, unknown> | void) {
+    getData<TData = unknown>(routeKey: string, input?: RouteInputValue) {
       return entries.get(cacheKey(routeKey, input, scope))?.state.data as TData | undefined;
     },
     setData(routeKey, input, data) {
@@ -119,10 +128,7 @@ export function createRouteKeyClient(config: ClientConfig): CausewayClient {
       });
       notify(listeners, key);
     },
-    getQueryState<TData = unknown, TError = unknown>(
-      routeKey: string,
-      input?: Record<string, unknown> | void,
-    ) {
+    getQueryState<TData = unknown, TError = unknown>(routeKey: string, input?: RouteInputValue) {
       return (entries.get(cacheKey(routeKey, input, scope))?.state ??
         EMPTY_QUERY_STATE) as QueryState<TData, TError>;
     },
@@ -157,7 +163,7 @@ export function createRouteKeyClient(config: ClientConfig): CausewayClient {
       for (const query of snapshot.queries) {
         const key = cacheKey(query.routeKey, query.input, query.scope);
         const previous = entries.get(key);
-        const nextState = {
+        const nextState: QueryState = {
           data: query.data,
           error: null,
           pending: false,
@@ -181,7 +187,7 @@ export function createRouteKeyClient(config: ClientConfig): CausewayClient {
 
   async function refreshAfterMutation(
     routeKey: string,
-    mutationInput: Record<string, unknown> | void | undefined,
+    mutationInput: RouteInputValue | undefined,
     opts: CallOptions,
   ): Promise<void> {
     try {
@@ -194,23 +200,22 @@ export function createRouteKeyClient(config: ClientConfig): CausewayClient {
     }
   }
 
+  // Map a mutation's input onto the refreshed query's parameters. Only the
+  // params the refresh route declares are carried over; if a required path
+  // param is absent we bail (SKIP_REFRESH) instead of firing a broken request.
   async function projectRefreshInput(
     routeKey: string,
-    mutationInput: Record<string, unknown> | void | undefined,
+    mutationInput: RouteInputValue | undefined,
   ): Promise<ProjectedRefreshInput> {
     const meta = requireRouteMeta(metaByRouteKey, routeKey);
     const descriptor = await loadRoute(meta.id);
     const params = descriptor.params ?? [];
     if (params.length === 0) return undefined;
-    const source = (mutationInput ?? {}) as Record<string, unknown>;
+
+    const source = argsFromInput(mutationInput);
     const input: Record<string, unknown> = {};
     for (const param of params) {
-      if (
-        param.in === "path" &&
-        (source[param.name] === undefined || source[param.name] === null)
-      ) {
-        return SKIP_REFRESH;
-      }
+      if (param.in === "path" && source[param.name] == null) return SKIP_REFRESH;
       if (param.name in source) input[param.name] = source[param.name];
     }
     return input;
@@ -218,7 +223,7 @@ export function createRouteKeyClient(config: ClientConfig): CausewayClient {
 
   async function runQuery(
     routeKey: string,
-    input: Record<string, unknown> | void,
+    input: RouteInputValue,
     opts: CallOptions,
     force: boolean,
   ): Promise<unknown> {
@@ -255,6 +260,8 @@ export function createRouteKeyClient(config: ClientConfig): CausewayClient {
         return data;
       })
       .catch((error: unknown) => {
+        // An aborted request should restore the prior cache state, not record
+        // an error — the caller cancelled deliberately.
         if (isAbortError(error)) {
           if (previous === undefined) entries.delete(key);
           else entries.set(key, previous);
@@ -285,7 +292,7 @@ export function createRouteKeyClient(config: ClientConfig): CausewayClient {
 
   async function* streamRoute<TEvent>(
     routeKey: string,
-    input: Record<string, unknown> | void,
+    input: RouteInputValue,
     opts: CallOptions,
   ): AsyncIterableIterator<TEvent> {
     const meta = requireRouteMeta(metaByRouteKey, routeKey);
@@ -295,7 +302,7 @@ export function createRouteKeyClient(config: ClientConfig): CausewayClient {
     }
     yield* streamCall(
       descriptor,
-      (input ?? {}) as Args,
+      argsFromInput(input),
       opts,
       baseUrl,
       config.headers,
@@ -322,11 +329,14 @@ function assertRouteKind(route: RouteMeta, kind: "query" | "mutation"): void {
   }
 }
 
+// Cache identity: route key + canonical input + scope. `stableStringify`
+// sorts object keys so `{a,b}` and `{b,a}` collide intentionally.
 function cacheKey(routeKey: string, input: unknown, scope: unknown): string {
   return stableStringify([routeKey, input ?? {}, scope ?? null]);
 }
 
-// Signature over route key + input + updatedAt, excluding the (large) data payload.
+// Content signature over route key + input + updatedAt, excluding the (large)
+// data payload — framework bindings key hydration on this to skip no-op work.
 function snapshotId(
   queries: ReadonlyArray<{ routeKey: string; input: unknown; updatedAt: number }>,
 ): string {
@@ -350,449 +360,4 @@ function queryStatesEqual(left: QueryState | undefined, right: QueryState): bool
     left.updatedAt === right.updatedAt &&
     stableStringify(left.data) === stableStringify(right.data)
   );
-}
-
-function stableStringify(value: unknown): string {
-  return JSON.stringify(canonicalize(value));
-}
-
-function isAbortError(error: unknown): boolean {
-  if (!error) return false;
-  if (error instanceof DOMException && error.name === "AbortError") return true;
-  if (error instanceof Error) {
-    return (
-      error.name === "AbortError" || /signal is aborted|aborted without reason/i.test(error.message)
-    );
-  }
-  if (typeof error === "string") return /signal is aborted|aborted without reason/i.test(error);
-  if (typeof error === "object") {
-    const message = (error as { message?: unknown }).message;
-    if (typeof message === "string" && /signal is aborted|aborted without reason/i.test(message))
-      return true;
-    return isAbortError((error as { cause?: unknown }).cause);
-  }
-  return false;
-}
-
-function canonicalize(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(canonicalize);
-  if (!isPlainObject(value)) return value;
-  const out: Record<string, unknown> = {};
-  for (const key of Object.keys(value).sort()) out[key] = canonicalize(value[key]);
-  return out;
-}
-
-function buildRequest(
-  route: RouteDescriptor,
-  args: Args,
-  opts: CallOptions,
-  baseUrl: string,
-  defaultHeaders: Record<string, string> | undefined,
-): { url: string; init: RequestInit } {
-  let { path } = route;
-  const query = new URLSearchParams();
-  const headers: Record<string, string> = { ...defaultHeaders, ...opts.headers };
-
-  const bodyEmbed: Record<string, unknown> = {};
-  let bodyWhole: unknown;
-  let bodyMode: "none" | "json" | "multipart" | "binary" | "form" = "none";
-  let multipart: FormData | null = null;
-
-  for (const p of route.params ?? []) {
-    const v = args[p.name];
-    if (v === undefined || (p.in === "query" && v === null)) continue;
-    switch (p.in) {
-      case "path": {
-        path = path.replace(`{${p.alias}}`, encodeURIComponent(String(v)));
-        break;
-      }
-      case "query": {
-        // Arrays expand to repeated keys: ?tag=a&tag=b. Servers using
-        // request.query_params.getlist(...) recover the list.
-        if (Array.isArray(v)) {
-          for (const item of v) {
-            if (item !== null && item !== undefined) query.append(p.alias, String(item));
-          }
-        } else query.append(p.alias, String(v));
-        break;
-      }
-      case "header": {
-        headers[p.alias] = String(v);
-        break;
-      }
-      case "cookie": {
-        // Browsers won't let JS set Cookie directly — userland can override.
-        const prev = headers["cookie"];
-        headers["cookie"] = `${prev ? `${prev}; ` : ""}${p.alias}=${String(v)}`;
-        break;
-      }
-      case "file": {
-        if (multipart == null) multipart = new FormData();
-        multipart.append(p.alias, v instanceof Blob ? v : String(v));
-        bodyMode = "multipart";
-        break;
-      }
-      case "body": {
-        if (route.binaryBody) {
-          // Raw-bytes body — pass the value through unchanged.
-          bodyWhole = v;
-          bodyMode = "binary";
-        } else if (route.formBody) {
-          bodyWhole = v;
-          bodyMode = "form";
-        } else if (p.embed) {
-          bodyEmbed[p.alias] = v;
-          if (bodyMode === "none") bodyMode = "json";
-        } else {
-          bodyWhole = v;
-          if (bodyMode === "none") bodyMode = "json";
-        }
-        break;
-      }
-    }
-  }
-
-  let body: BodyInit | undefined;
-  const requestOpaque = buildOpaqueTree(route.opaqueRequestPaths);
-  if (bodyMode === "json") {
-    headers["content-type"] ??= "application/json";
-    const payload = Object.keys(bodyEmbed).length > 0 ? bodyEmbed : bodyWhole;
-    // camelCase → snake_case so the Python server sees the keys it expects.
-    // Subtrees flagged opaque in the route descriptor pass through untouched
-    // so user-defined JSON (e.g. `definition: dict[str, Any]`) keeps its keys.
-    body =
-      payload === undefined
-        ? undefined
-        : JSON.stringify(camelToSnakeDeepGuarded(payload, requestOpaque));
-  } else if (bodyMode === "multipart" && multipart != null) {
-    // Let fetch set the multipart boundary; we must NOT pin content-type.
-    delete headers["content-type"];
-    body = multipart;
-  } else if (bodyMode === "binary") {
-    headers["content-type"] ??= "application/octet-stream";
-    body = bodyWhole as BodyInit;
-  } else if (bodyMode === "form") {
-    headers["content-type"] ??= "application/x-www-form-urlencoded";
-    const form = new URLSearchParams();
-    const payload = camelToSnakeDeepGuarded(bodyWhole, requestOpaque);
-    if (!isPlainObject(payload)) {
-      throw new TypeError("Causeway form body must be an object.");
-    }
-    for (const [k, val] of Object.entries(payload)) {
-      if (val === undefined || val === null) continue;
-      if (Array.isArray(val)) for (const item of val) form.append(k, String(item));
-      else form.append(k, String(val));
-    }
-    body = form.toString();
-  }
-
-  const qs = query.toString();
-  const missingPathParam = path.match(/\{([^}]+)\}/);
-  if (missingPathParam) {
-    throw new Error(
-      `Missing path parameter "${missingPathParam[1]}" for Causeway route ${route.routeKey}`,
-    );
-  }
-  return {
-    url: `${baseUrl}${path}${qs ? `?${qs}` : ""}`,
-    init: { method: route.method, headers, body, signal: opts.signal },
-  };
-}
-
-async function unaryCall(
-  route: RouteDescriptor,
-  url: string,
-  init: RequestInit,
-  fetchImpl: FetchImpl,
-): Promise<unknown> {
-  const res = await fetchImpl(url, init);
-
-  if (route.binaryResponse) {
-    if (!res.ok) throw await httpError(res);
-    // Server marked the route as raw bytes — hand back a Blob, skip JSON parsing.
-    return await res.blob();
-  }
-
-  const ct = res.headers.get("content-type") ?? "";
-
-  // JSON path — covers both 2xx envelopes and 4xx/5xx typed-error envelopes
-  // ({ ok: false, error: { kind, … } }). Frameworks like Causeway map declared
-  // `@raises` errors to their HTTP status code while keeping the envelope body;
-  // we recognize that shape and surface it as `Result.error` instead of a
-  // generic `HTTP NNN: …` so consumers can branch on `error.kind`.
-  if (ct.includes("application/json")) {
-    const raw: unknown = await res.json();
-    const responseOpaque = buildOpaqueTree(route.opaqueResponsePaths);
-    const value = snakeToCamelDeepGuarded(raw, responseOpaque);
-    if (isTypedErrorEnvelope(value)) {
-      if (route.result) return value as Result<unknown, unknown>;
-      const errPayload = value.error;
-      // Carry the HTTP status onto the thrown error so consumers don't need
-      // to inspect the response separately.
-      throw buildError({ ...errPayload, status: errPayload.status ?? res.status });
-    }
-    if (!res.ok) throw httpErrorFromJson(res.status, raw);
-    // `result: true` hands the envelope back untouched; the caller's static
-    // type is `Result<T, E>` so TypeScript forces them to branch on `ok`.
-    return route.result ? (value as Result<unknown, unknown>) : value;
-  }
-
-  if (!res.ok) throw await httpError(res);
-  if (res.status === 204 || ct === "") return undefined;
-  return await res.text();
-}
-
-function isTypedErrorEnvelope(
-  value: unknown,
-): value is { ok: false; error: Record<string, unknown> & { kind: string } } {
-  if (!isPlainObject(value) || value.ok !== false) return false;
-  const { error } = value;
-  return isPlainObject(error) && typeof error.kind === "string";
-}
-
-function httpErrorFromJson(status: number, raw: unknown): CausewayError {
-  if (isPlainObject(raw)) {
-    return buildError({ ...raw, status });
-  }
-  return new CausewayError({
-    kind: "HttpError",
-    status,
-    message: `HTTP ${status}`,
-    data: raw,
-  });
-}
-
-// Streaming caller with built-in resume. We track the last `id:` seen and,
-// if the connection drops mid-stream, reconnect with `Last-Event-Id`. The
-// server's `retry:` value (in ms) controls the minimum backoff; we cap at
-// 30s and abort on user cancellation.
-async function* streamCall(
-  route: RouteDescriptor,
-  args: Args,
-  opts: CallOptions,
-  baseUrl: string,
-  defaultHeaders: Record<string, string> | undefined,
-  fetchImpl: FetchImpl,
-): AsyncIterableIterator<unknown> {
-  let lastId: string | undefined;
-  let retryMs = 1000; // default backoff if server doesn't send `retry:`
-  const startedAt = Date.now();
-  const maxResumeWindowMs = 5 * 60 * 1000; // give up after 5 min of failed reconnects
-  const streamOpaque = buildOpaqueTree(route.opaqueResponsePaths);
-
-  while (true) {
-    if (opts.signal?.aborted) return;
-    const headers: Record<string, string> = { ...defaultHeaders, ...opts.headers };
-    if (lastId !== undefined) headers["last-event-id"] = lastId;
-
-    const { url, init } = buildRequest(route, args, { ...opts, headers }, baseUrl, defaultHeaders);
-    let res: Response;
-    try {
-      res = await fetchImpl(url, init);
-    } catch (error) {
-      if (opts.signal?.aborted) return;
-      if (Date.now() - startedAt > maxResumeWindowMs) throw error;
-      await sleep(retryMs, opts.signal);
-      continue;
-    }
-    if (!res.ok) throw await httpError(res);
-    if (!res.body) return;
-
-    let sawDone = false;
-    try {
-      for await (const ev of parseSSE(res.body)) {
-        if (ev.retry !== undefined) retryMs = Math.min(ev.retry, 30_000);
-        if (ev.id !== undefined) lastId = ev.id;
-        if (ev.event === "done") {
-          sawDone = true;
-          return;
-        }
-        if (ev.event === "error") {
-          // Typed stream errors are terminal — don't retry, propagate to caller.
-          throw Object.assign(new Error("stream error"), {
-            kind: "error",
-            payload: safeJsonParse(ev.data),
-            causewayTerminal: true,
-          });
-        }
-        if (ev.data === "") continue;
-        yield snakeToCamelDeepGuarded(safeJsonParse(ev.data), streamOpaque);
-      }
-    } catch (error) {
-      if (opts.signal?.aborted) return;
-      if (isTerminalStreamError(error)) throw error;
-      if (Date.now() - startedAt > maxResumeWindowMs) throw error;
-      await sleep(retryMs, opts.signal);
-      continue;
-    }
-    // Stream ended without `event: done` — treat as a disconnect and reconnect.
-    if (sawDone) return;
-    if (opts.signal?.aborted) return;
-    if (Date.now() - startedAt > maxResumeWindowMs) return;
-    await sleep(retryMs, opts.signal);
-  }
-}
-
-async function sleep(ms: number, signal?: AbortSignal): Promise<void> {
-  if (signal?.aborted) return;
-  await new Promise<void>((resolve) => {
-    let done = false;
-    const finish = () => {
-      if (done) return;
-      done = true;
-      resolve();
-    };
-    const timer = setTimeout(finish, ms);
-    signal?.addEventListener(
-      "abort",
-      () => {
-        clearTimeout(timer);
-        finish();
-      },
-      { once: true },
-    );
-  });
-}
-
-async function httpError(res: Response): Promise<CausewayError> {
-  const body = await res.text();
-  const parsed = safeJsonParse(body);
-  if (isPlainObject(parsed) && "kind" in parsed) {
-    return buildError({ ...parsed, status: res.status });
-  }
-  return new CausewayError({
-    kind: "HttpError",
-    status: res.status,
-    message: `HTTP ${res.status}`,
-    data: body,
-  });
-}
-
-function isTerminalStreamError(error: unknown): boolean {
-  return (
-    (typeof error === "object" || typeof error === "function") &&
-    error !== null &&
-    Reflect.get(error, "causewayTerminal") === true
-  );
-}
-
-function safeJsonParse(s: string): unknown {
-  try {
-    return JSON.parse(s);
-  } catch {
-    return s;
-  }
-}
-
-// ---- snake_case ↔ camelCase ----
-// Causeway runs Python (snake_case) on the wire and TS (camelCase) in the editor.
-// We walk plain-object trees only — arrays of objects descend, scalars and class
-// instances (Blob, Date, FormData, …) pass through untouched.
-
-const camelCache = new Map<string, string>();
-const snakeCache = new Map<string, string>();
-
-function snakeToCamel(s: string): string {
-  const hit = camelCache.get(s);
-  if (hit !== undefined) return hit;
-  const out = s.replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase());
-  camelCache.set(s, out);
-  return out;
-}
-
-function camelToSnake(s: string): string {
-  const hit = snakeCache.get(s);
-  if (hit !== undefined) return hit;
-  const out = s.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
-  snakeCache.set(s, out);
-  return out;
-}
-
-function isPlainObject(x: unknown): x is Record<string, unknown> {
-  return (
-    Boolean(x) &&
-    typeof x === "object" &&
-    (Object.getPrototypeOf(x) === Object.prototype || Object.getPrototypeOf(x) === null)
-  );
-}
-
-function snakeToCamelDeep(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(snakeToCamelDeep);
-  if (!isPlainObject(value)) return value;
-  const out: Record<string, unknown> = {};
-  for (const k of Object.keys(value)) out[snakeToCamel(k)] = snakeToCamelDeep(value[k]);
-  return out;
-}
-
-function camelToSnakeDeep(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(camelToSnakeDeep);
-  if (!isPlainObject(value)) return value;
-  const out: Record<string, unknown> = {};
-  for (const k of Object.keys(value)) out[camelToSnake(k)] = camelToSnakeDeep(value[k]);
-  return out;
-}
-
-// Opaque-subtree-aware variants. Routes declare opaque paths in their
-// descriptor when they accept or return user-defined JSON payloads
-// (`dict[str, Any]` / `JsonObject`). At each declared path we skip the
-// recursive rename so the payload's own keys survive the round trip.
-
-interface OpaqueTree {
-  opaque?: boolean;
-  children?: Record<string, OpaqueTree>;
-}
-
-function buildOpaqueTree(paths: ReadonlyArray<string> | undefined): OpaqueTree | null {
-  if (!paths || paths.length === 0) return null;
-  const root: OpaqueTree = {};
-  for (const path of paths) {
-    let node = root;
-    for (const seg of path.split(".")) {
-      if (!seg) continue;
-      const children = node.children ?? (node.children = {});
-      node = children[seg] ?? (children[seg] = {});
-    }
-    node.opaque = true;
-  }
-  return root;
-}
-
-function snakeToCamelDeepGuarded(value: unknown, tree: OpaqueTree | null): unknown {
-  if (tree === null) return snakeToCamelDeep(value);
-  // Arrays inherit the parent path — opaque paths are property-relative.
-  if (Array.isArray(value)) return value.map((v) => snakeToCamelDeepGuarded(v, tree));
-  if (!isPlainObject(value)) return value;
-  const out: Record<string, unknown> = {};
-  for (const k of Object.keys(value)) {
-    const renamed = snakeToCamel(k);
-    const child = tree.children?.[renamed];
-    if (child?.opaque) {
-      // Preserve the opaque subtree verbatim — don't even rename inside it.
-      out[renamed] = value[k];
-    } else if (child) {
-      out[renamed] = snakeToCamelDeepGuarded(value[k], child);
-    } else {
-      out[renamed] = snakeToCamelDeep(value[k]);
-    }
-  }
-  return out;
-}
-
-function camelToSnakeDeepGuarded(value: unknown, tree: OpaqueTree | null): unknown {
-  if (tree === null) return camelToSnakeDeep(value);
-  if (Array.isArray(value)) return value.map((v) => camelToSnakeDeepGuarded(v, tree));
-  if (!isPlainObject(value)) return value;
-  const out: Record<string, unknown> = {};
-  for (const k of Object.keys(value)) {
-    const child = tree.children?.[k];
-    const renamed = camelToSnake(k);
-    if (child?.opaque) {
-      out[renamed] = value[k];
-    } else if (child) {
-      out[renamed] = camelToSnakeDeepGuarded(value[k], child);
-    } else {
-      out[renamed] = camelToSnakeDeep(value[k]);
-    }
-  }
-  return out;
 }

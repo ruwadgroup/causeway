@@ -23,5 +23,6 @@ export type {
   QueryState,
   Result,
   RouteDescriptor,
+  RouteInputValue,
   RouteMeta,
 } from "./types.js";

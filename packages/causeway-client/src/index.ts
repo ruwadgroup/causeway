@@ -1,4 +1,5 @@
 import type { CallOptions, CausewayClient } from "@causewayjs/ts";
+import type { RouteInputValue } from "@causewayjs/ts";
 
 export {
   CausewayError,
@@ -24,12 +25,11 @@ export type {
   HydrateOptions,
   QueryState,
   RouteDescriptor,
+  RouteInputValue,
   RouteMeta,
 } from "@causewayjs/ts";
 
 export interface Register {}
-
-export type RouteInputValue = Record<string, unknown> | void;
 
 export type ClientFactory<TClient = CausewayClient, TOptions extends object = object> = (
   options?: TOptions,

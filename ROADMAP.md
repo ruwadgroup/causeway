@@ -91,9 +91,10 @@ Until 1.0: pre-release. Pin exact versions.
 
 ## Plugin ecosystem
 
-The plugin contracts are the load-bearing surface for everything Causeway
-deliberately doesn't ship. Reference adapters live in core (in-memory,
-local-filesystem, in-process); production adapters are sibling packages.
+The plugin contracts are the load-bearing surface for everything outside the
+framework core. Reference adapters live in core (in-memory, local-filesystem,
+in-process), and official production adapters ship under `causeway.contrib`
+behind extras.
 
 What follows is the planned ecosystem. **No timeline** — each plugin
 lands when there's enough demand to justify it and a real implementation
@@ -102,7 +103,7 @@ counts as a vote, not a commitment.
 
 ### Database / ORM
 
-- `causeway-db-sqlmodel` — SQLAlchemy / SQLModel session provider + Alembic glue.
+- `causeway[sqlmodel]` — SQLAlchemy / SQLModel session provider + Alembic glue.
 - `causeway-tortoise` — Tortoise ORM session + Aerich migrations.
 - `causeway-piccolo` — Piccolo ORM provider + migrations.
 - `causeway-prisma` — Prisma Python client provider.
@@ -111,7 +112,7 @@ counts as a vote, not a commitment.
 ### Auth
 
 - `causeway-auth-sessions` — server-side session cookies + CSRF.
-- `causeway-auth-jwt` — bearer JWT, key-rotation aware.
+- `causeway[jwt]` — bearer JWT, key-rotation aware.
 - `causeway-auth-clerk`
 - `causeway-auth-workos`
 - `causeway-auth-auth0`
@@ -121,7 +122,7 @@ counts as a vote, not a commitment.
 
 ### Storage (blob / object)
 
-- `causeway-storage-s3`
+- `causeway[s3]`
 - `causeway-storage-r2`
 - `causeway-storage-gcs`
 - `causeway-storage-azure`
@@ -130,7 +131,7 @@ counts as a vote, not a commitment.
 
 ### Cache / KV
 
-- `causeway-cache-redis`
+- `causeway[redis]`
 - `causeway-cache-dragonfly`
 - `causeway-cache-upstash`
 - `causeway-cache-memcached`
@@ -161,7 +162,7 @@ counts as a vote, not a commitment.
 - `causeway-mailer-ses`
 - `causeway-mailer-sendgrid`
 - `causeway-mailer-mailgun`
-- `causeway-mailer-smtp`
+- `causeway[smtp]`
 
 ### Search
 
@@ -178,7 +179,7 @@ counts as a vote, not a commitment.
 
 ### Observability — tracing + logging
 
-- `causeway-observe-sentry`
+- `causeway[sentry]`
 - `causeway-observe-signoz`
 - `causeway-observe-honeycomb`
 - `causeway-observe-datadog`
@@ -197,7 +198,7 @@ counts as a vote, not a commitment.
 
 ### Feature flags
 
-- `causeway-flags-growthbook`
+- `causeway[growthbook]`
 - `causeway-flags-flagsmith`
 - `causeway-flags-unleash`
 - `causeway-flags-launchdarkly`
@@ -227,20 +228,20 @@ counts as a vote, not a commitment.
 
 ### Deploy adapters
 
-- `causeway-deploy-modal`
-- `causeway-deploy-fly`
+- `causeway[modal]`
+- `causeway[fly]`
 - `causeway-deploy-lambda` — via Mangum.
 - `causeway-deploy-render`
 - `causeway-deploy-railway`
 - `causeway-deploy-aws-ecs`
 - `causeway-deploy-gcp-run`
-- `causeway-deploy-docker` — emits a working `Dockerfile` + `compose.yaml`.
+- `causeway[docker]` — emits a working `Dockerfile` + `compose.yaml`.
 
 ### Plugin ergonomics (these help the ecosystem itself)
 
 - `causeway-plugin-cookiecutter` — `causeway plugin new <name>` scaffolds a new
-  plugin package wired to the right entry point, with CI, README, and a
-  smoke test against a `TestApp`.
+  third-party plugin package wired to the right entry point, with CI, README,
+  and a smoke test against a `TestApp`.
 - `causeway-plugin-doctor` — `causeway plugin doctor` validates an installed
   plugin against the contract version it claims to implement.
 
@@ -263,7 +264,7 @@ counts as a vote, not a commitment.
 These are the lines I'm holding. If enough people push back I'll
 reconsider — but the default is no.
 
-1. **No ORM in core.** Ever.
+1. **No ORM as a default.** ORM adapters stay optional extras.
 2. **No admin panel in core.** Ever.
 3. **No HTML rendering / template engine in core.** Ever.
 4. **No infrastructure provisioning.** That's Terraform / Pulumi / Modal's
@@ -279,8 +280,8 @@ In rough order of "how much I stole from each":
 - **Litestar** — for "msgspec-first ASGI is viable" and clean DI scopes.
 - **Encore.ts** — for proving declarative, type-driven backends work.
 - **FastAPI** — for `Depends()` DI and dev-loop ergonomics.
-- **`dyadpy`** — the lower-level typed-RPC primitive Causeway depends on
-  for IR + TypeScript codegen + streaming.
+- **Causeway's folded-in route runtime** — the typed-RPC layer that backs
+  IR, TypeScript codegen, and streaming.
 - **AdonisJS / Laravel** — for what _not_ to do at the framework layer
   (the "ship every battery" model).
 

@@ -7,7 +7,7 @@ The `Idempotency-Key` request header lets clients retry unsafe operations withou
 ```python
 # src/app/plugins.py
 from causeway import register
-from causeway_cache_redis import RedisKV   # or any KV plugin
+from causeway.contrib.redis import RedisKV   # or any KV plugin
 register(RedisKV(url=settings.redis_url))
 ```
 

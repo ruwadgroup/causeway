@@ -8,8 +8,8 @@ $ causeway plugins
 ┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Adapter          ┃ Contract version  ┃ Module               ┃
 ┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
-│ DramatiqAdapter  │ v1.0              │ causeway_tasks_dramatiq  │
-│ S3Storage        │ v1.0              │ causeway_storage_s3      │
+│ DramatiqAdapter  │ v1.0              │ causeway.contrib.dramatiq  │
+│ S3Storage        │ v1.0              │ causeway.contrib.s3      │
 └──────────────────┴───────────────────┴──────────────────────┘
 ```
 

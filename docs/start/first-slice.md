@@ -185,5 +185,5 @@ There are no manual query-key helpers and no frontend invalidation list. The bac
 - [Defining routes](../backend/routing.md) — full file routing rules.
 - [HTTP methods](../backend/methods.md) — decorators and refresh contracts.
 - [Client runtime](../client/index.md) — route-key client details.
-- [React](../client/react.md), [Next.js](../client/next.md), [Svelte](../client/svelte.md), [Solid](../client/solid.md) — framework adapters.
+- [React](../client/react.md), [Next.js](../client/next.md) — framework adapters.
 - [App Graph](../client/app-graph.md) — what `causeway inspect --json` exposes.

@@ -160,7 +160,7 @@ def _collect_plugin_packages(
     manifest: FreezeManifest | None,
     freeze_out: Path,
 ) -> tuple[str, ...]:
-    """Return the unique top-level package per frozen entry-point plugin.
+    """Return the unique package per frozen entry-point plugin.
 
     Filters by the ``_EP_`` alias prefix so future non-plugin imports in
     ``_frozen_plugins.py`` are ignored.
@@ -176,7 +176,11 @@ def _collect_plugin_packages(
             continue
         head = line.split(" import ", 1)[0]
         module = head[len("from ") :].strip()
-        packages.add(module.split(".", 1)[0])
+        parts = module.split(".")
+        if parts[:2] == ["causeway", "contrib"] and len(parts) >= 3:
+            packages.add(".".join(parts[:3]))
+        else:
+            packages.add(parts[0])
     return tuple(sorted(packages))
 
 
