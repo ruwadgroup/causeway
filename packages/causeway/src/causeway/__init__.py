@@ -62,7 +62,7 @@ from causeway.webhooks import (
     verify_signature,
 )
 
-__version__ = "0.6.4"
+__version__ = "1.0.0a0"
 
 __all__ = [
     "App",

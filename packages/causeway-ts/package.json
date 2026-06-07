@@ -1,6 +1,6 @@
 {
   "name": "@causewayjs/ts",
-  "version": "0.1.7-alpha.3",
+  "version": "1.0.0-alpha.0",
   "description": "Tiny TypeScript runtime imported by causeway-generated clients.",
   "keywords": [
     "python",

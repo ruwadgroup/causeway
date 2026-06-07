@@ -138,8 +138,6 @@ class DramatiqAdapter:
             return False
         return True
 
-    # ---- state + cancellation (Redis-backed; no-ops without a client) ----
-
     def _client(self) -> Any | None:
         # RedisBroker exposes `.client`; stub/other brokers don't (state is a no-op there).
         return getattr(self._broker, "client", None)
@@ -194,8 +192,6 @@ class DramatiqAdapter:
         if client is None:
             return False
         return bool(client.exists(self._cancel_key(task_id)))
-
-    # ---- actor creation + dispatch ----
 
     def _actor_for(self, task: TaskRef, *, cron_expr: str | None = None) -> Any:
         key = f"{task.module}.{task.name}"
@@ -270,8 +266,6 @@ class DramatiqAdapter:
                     _cancel_check_var.reset(token)
 
         return asyncio.run_coroutine_threadsafe(invoke(), _worker_loop()).result()
-
-    # ---- TaskAdapter surface ----
 
     async def enqueue(self, task: TaskRef, payload: bytes) -> str:
         actor = self._actor_for(task)

@@ -49,7 +49,6 @@ def _rewrite_file(path: Path, edits: list[SnapshotEdit]) -> str | None:
     except (tokenize.TokenError, IndentationError):
         return None
 
-    # Build a (line, col) -> token-index lookup of ``snapshot(`` call sites.
     snapshot_calls = _find_snapshot_calls(tokens)
     if not snapshot_calls:
         return None

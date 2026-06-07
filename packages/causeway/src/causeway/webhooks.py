@@ -52,11 +52,6 @@ TIMESTAMP_HEADER = "x-causeway-timestamp"
 EVENT_HEADER = "x-causeway-event"
 
 
-# ---------------------------------------------------------------------------
-# Signing
-# ---------------------------------------------------------------------------
-
-
 def sign_payload(
     secret: str,
     body: bytes,
@@ -114,11 +109,6 @@ def verify_signature(
 def new_secret() -> str:
     """Generate a fresh URL-safe secret for a new webhook endpoint."""
     return secrets.token_urlsafe(32)
-
-
-# ---------------------------------------------------------------------------
-# Subscriber (static, file-based)
-# ---------------------------------------------------------------------------
 
 
 @dataclass(slots=True)
@@ -184,11 +174,6 @@ def _json_equal(a: Any, b: Any) -> bool:
     return False
 
 
-# ---------------------------------------------------------------------------
-# Webhook store (dynamic, runtime-managed subscriptions)
-# ---------------------------------------------------------------------------
-
-
 @dataclass(slots=True)
 class StoredSubscriber:
     """A row from a :class:`WebhookStore`. Shape mirrors :class:`Subscriber`
@@ -214,11 +199,6 @@ def set_store(store: WebhookStore | None) -> None:
 def active_store() -> WebhookStore | None:
     """Return the currently-installed :class:`WebhookStore`, or ``None``."""
     return _store
-
-
-# ---------------------------------------------------------------------------
-# Delivery
-# ---------------------------------------------------------------------------
 
 
 @task(queue="webhooks", retries=5, backoff="exponential")
@@ -323,11 +303,6 @@ async def _fanout(event: Event) -> list[str]:
 _events._set_fanout(_fanout)
 
 
-# ---------------------------------------------------------------------------
-# Incoming verification
-# ---------------------------------------------------------------------------
-
-
 @dataclass(slots=True)
 class IncomingWebhook:
     """A verified incoming webhook. The ``body`` bytes are the raw signed
@@ -397,11 +372,6 @@ def _headers(req: Any) -> dict[str, str]:
     return {}
 
 
-# ---------------------------------------------------------------------------
-# Webhooks adapter (signing + verify only; delivery rides @task)
-# ---------------------------------------------------------------------------
-
-
 class InMemoryWebhooks:
     """Reference :class:`~causeway.contracts.Webhooks` implementation.
 
@@ -423,11 +393,6 @@ class InMemoryWebhooks:
         return True
 
 
-# ---------------------------------------------------------------------------
-# Framework events
-# ---------------------------------------------------------------------------
-
-
 class WebhookDeliveryFailed(Event):
     """Emitted when a delivery exhausts its retry budget.
 
@@ -442,11 +407,6 @@ class WebhookDeliveryFailed(Event):
     event_wire_name: str
     attempts: int
     last_error: str
-
-
-# ---------------------------------------------------------------------------
-# Reference in-memory store (for testing / single-process apps)
-# ---------------------------------------------------------------------------
 
 
 class InMemoryWebhookStore:

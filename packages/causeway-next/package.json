@@ -1,6 +1,6 @@
 {
   "name": "@causewayjs/next",
-  "version": "0.1.2-alpha.3",
+  "version": "1.0.0-alpha.0",
   "description": "Next.js helpers for the Causeway route-key client runtime.",
   "keywords": [
     "nextjs",
@@ -66,8 +66,8 @@
     "clean": "rimraf dist .turbo"
   },
   "dependencies": {
-    "@causewayjs/client": "workspace:*",
-    "@causewayjs/react": "workspace:*"
+    "@causewayjs/client": "workspace:1.0.0-alpha.0",
+    "@causewayjs/react": "workspace:1.0.0-alpha.0"
   },
   "peerDependencies": {
     "react": ">=18.0.0"

@@ -1,5 +1,3 @@
-// Shared types between the runtime and the generated client.
-
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 export type ParamLocation = "path" | "query" | "body" | "header" | "cookie" | "file";
 

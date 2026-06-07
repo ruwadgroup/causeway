@@ -30,25 +30,16 @@ jobs:
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.0.0
         with:
           python-version: "3.13"
-      - name: Install core + every plugin into an audit venv
+      - name: Install core + every extra into an audit venv
         # Local monorepo packages aren't published to PyPI, so pip-audit
         # can't resolve them and ``--strict`` rejects the whole run. Install
-        # them in editable mode so ``--skip-editable`` filters them out
-        # while still leaving every *transitive* dependency in the venv to
-        # be audited.
+        # editable so ``--skip-editable`` filters them out while still leaving
+        # every *transitive* dependency in the venv to be audited. The ``[all]``
+        # extra pulls in every bundled contrib adapter's dependencies.
         run: |
           set -euo pipefail
           uv venv .venv-audit
           uv pip install --python .venv-audit/bin/python -e "./packages/causeway[all]"
-          for pyproject in packages/causeway-*/pyproject.toml; do
-            pkg="$(dirname "$pyproject")"
-            uv pip install --python .venv-audit/bin/python -e "$pkg"
-          done
           uv pip install --python .venv-audit/bin/python pip-audit
       - name: pip-audit (fails on any known vuln)
-        # ``--strict`` would re-fail on each editable causeway-* install
-        # even with ``--skip-editable``: it treats "can't audit this
-        # distribution" as a hard error. Without ``--strict``, pip-audit
-        # still fails the run on any real vulnerability in a third-party
-        # dependency — which is the whole point of the gate.
         run: .venv-audit/bin/pip-audit --skip-editable

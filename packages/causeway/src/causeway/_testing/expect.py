@@ -56,8 +56,6 @@ class Expectation:
         self._path = path
         self._response = response
 
-    # ---- traversal -----------------------------------------------------------
-
     def __getattr__(self, name: str) -> Expectation:
         return self._step(name)
 
@@ -87,15 +85,11 @@ class Expectation:
             return Expectation(getattr(v, key), path=new_path, response=self._response)
         return Expectation(_Missing(new_path), path=new_path, response=self._response)
 
-    # ---- value extraction ----------------------------------------------------
-
     def _resolved(self) -> Any:
         v = self._value
         if isinstance(v, PathValue):
             return v.unwrap()
         return v
-
-    # ---- assertions ----------------------------------------------------------
 
     def __eq__(self, other: object) -> bool:
         from causeway._testing.snapshot import SnapshotValue
@@ -177,8 +171,6 @@ class Expectation:
                 path=self._path,
             )
         return True
-
-    # ---- explicit predicate hooks --------------------------------------------
 
     def is_(self, other: Any) -> bool:
         actual = self._resolved()

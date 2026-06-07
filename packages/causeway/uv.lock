@@ -345,7 +345,7 @@ wheels = [
 
 [[package]]
 name = "causeway"
-version = "0.6.4"
+version = "1.0.0a0"
 source = { editable = "." }
 dependencies = [
     { name = "anyio" },

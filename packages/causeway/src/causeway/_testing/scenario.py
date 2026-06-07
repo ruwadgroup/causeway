@@ -92,8 +92,6 @@ class _It:
         """Underlying causeway App. Escape hatch for advanced usage."""
         return None if self._test_app is None else self._test_app._app
 
-    # ---- HTTP --------------------------------------------------------------
-
     def request(self, method: str, path: str, **kwargs: Any) -> Response:
         if self._collecting or self._test_app is None or self._loop is None:
             return _NULL_RESPONSE
@@ -116,8 +114,6 @@ class _It:
 
     def delete(self, path: str, **kwargs: Any) -> Response:
         return self.request("DELETE", path, **kwargs)
-
-    # ---- overrides ---------------------------------------------------------
 
     def override(self, provider: Callable[..., Any], replacement: Callable[..., Any]) -> _It:
         """Swap a DI provider for the rest of this scenario."""
@@ -149,8 +145,6 @@ class _It:
         self._cleanups.append(_close_eager)
         return self
 
-    # ---- skip / xfail ------------------------------------------------------
-
     def skip(self, reason: str = "") -> None:
         """Skip this scenario at runtime (raises pytest's skip exception)."""
         if self._collecting:
@@ -166,8 +160,6 @@ class _It:
         import pytest
 
         pytest.xfail(reason or "expected failure")
-
-    # ---- teardown ----------------------------------------------------------
 
     def _close(self) -> None:
         for cleanup in reversed(self._cleanups):
@@ -245,7 +237,6 @@ class _ScenarioContextManager(AbstractContextManager["_It"]):
             self._it = _It(None, None, collecting=True)
             return self._it
 
-        # execute mode
         reg.scenarios.append(RegisteredScenario(label=self._label, body=_NOOP, lineno=self._lineno))
         self._index = index
         target = reg.target_index

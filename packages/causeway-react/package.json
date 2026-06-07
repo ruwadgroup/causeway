@@ -1,6 +1,6 @@
 {
   "name": "@causewayjs/react",
-  "version": "0.2.6-alpha.3",
+  "version": "1.0.0-alpha.0",
   "description": "React hooks for the Causeway route-key client runtime.",
   "keywords": [
     "python",
@@ -62,7 +62,7 @@
     "@types/node": "25.7.0",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
-    "@causewayjs/client": "workspace:*",
+    "@causewayjs/client": "workspace:1.0.0-alpha.0",
     "happy-dom": "20.9.0",
     "react": "19.2.6",
     "react-dom": "19.2.6",
@@ -71,7 +71,7 @@
     "vitest": "4.1.6"
   },
   "peerDependencies": {
-    "@causewayjs/client": ">=0.1.0-alpha.0 <0.2.0",
+    "@causewayjs/client": ">=1.0.0-alpha.0 <2.0.0",
     "react": ">=18.0.0"
   },
   "engines": {

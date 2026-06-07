@@ -1,9 +1,3 @@
-// The route-key client: a tiny query cache + request orchestrator that the
-// framework bindings (`@causewayjs/react`, `@causewayjs/next`) sit on top of.
-// Wire encoding, SSE, and case conversion live in sibling modules; this file
-// owns identity (cache keys), in-flight dedup, refresh-after-mutation, and
-// dehydrate/hydrate.
-
 import { buildRequest, streamCall, unaryCall } from "./transport.js";
 import type {
   CallOptions,

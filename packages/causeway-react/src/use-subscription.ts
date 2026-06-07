@@ -1,6 +1,3 @@
-// `useSubscription` — consumes a streaming route (SSE) for its lifetime,
-// forwarding each event to `onEvent` and exposing connection status.
-
 import { useEffect, useRef, useState } from "react";
 
 import { normalizeError } from "@causewayjs/client";

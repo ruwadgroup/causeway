@@ -1,7 +1,3 @@
-// `useQuery` — subscribes a component to a route-key query in the client cache
-// via `useSyncExternalStore`, and drives refresh-on-mount with stale-time and
-// keep-previous-data semantics.
-
 import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
 
 import type {

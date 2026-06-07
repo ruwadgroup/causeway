@@ -556,9 +556,6 @@ def write(ir: AppIR, out: Path) -> None:
         shutil.rmtree(backup, ignore_errors=True)
 
 
-# ---- type rendering ----
-
-
 def _render_type(
     schema: Any,
     name_map: dict[str, str] | None = None,
@@ -794,7 +791,6 @@ def _render_route_descriptor(
     return "\n".join(lines)
 
 
-# ---- Opaque path collection ------------------------------------------------
 # JSON Schema walker that locates property paths whose declared type is an
 # unconstrained object (``dict[str, Any]`` / ``JsonObject``). The TS runtime
 # uses these paths to skip the snake_case <-> camelCase rename inside those

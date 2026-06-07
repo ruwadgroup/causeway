@@ -105,48 +105,6 @@ jobs:
           flags: core
           token: ${{ secrets.CODECOV_TOKEN }}
 
-  test-plugins:
-    name: Test plugin · ${{ matrix.plugin }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        plugin:
-          - causeway-auth-jwt
-          - causeway-cache-redis
-          - causeway-db-sqlmodel
-          - causeway-deploy-docker
-          - causeway-deploy-fly
-          - causeway-deploy-modal
-          - causeway-flags-growthbook
-          - causeway-mailer-smtp
-          - causeway-observe-sentry
-          - causeway-storage-fs
-          - causeway-storage-s3
-          - causeway-tasks-dramatiq
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.0
-      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v7.1.1
-        with:
-          enable-cache: true
-      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.0.0
-        with:
-          python-version: "3.13"
-      - name: Test ${{ matrix.plugin }}
-        working-directory: packages/${{ matrix.plugin }}
-        run: |
-          MODULE="${{ matrix.plugin }}"
-          MODULE="${MODULE//-/_}"
-          uv sync --group dev
-          uv run pytest --cov="$MODULE" --cov-report=xml --cov-fail-under=90 -q
-      - uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
-        with:
-          files: packages/${{ matrix.plugin }}/coverage.xml
-          flags: plugins
-          token: ${{ secrets.CODECOV_TOKEN }}
-
   test-examples:
     name: Test example · ${{ matrix.example }}
     runs-on: ubuntu-latest
@@ -176,7 +134,7 @@ jobs:
 
   required:
     name: All checks passed
-    needs: [lint-docs, lint-py, test-py, test-plugins, test-examples]
+    needs: [lint-docs, lint-py, test-py, test-examples]
     if: always()
     runs-on: ubuntu-latest
     permissions:

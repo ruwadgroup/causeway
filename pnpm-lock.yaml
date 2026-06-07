@@ -39,7 +39,7 @@ importers:
   packages/causeway-client:
     dependencies:
       '@causewayjs/ts':
-        specifier: workspace:*
+        specifier: workspace:1.0.0-alpha.0
         version: link:../causeway-ts
     devDependencies:
       '@types/node':
@@ -58,10 +58,10 @@ importers:
   packages/causeway-next:
     dependencies:
       '@causewayjs/client':
-        specifier: workspace:*
+        specifier: workspace:1.0.0-alpha.0
         version: link:../causeway-client
       '@causewayjs/react':
-        specifier: workspace:*
+        specifier: workspace:1.0.0-alpha.0
         version: link:../causeway-react
     devDependencies:
       '@types/node':
@@ -95,7 +95,7 @@ importers:
   packages/causeway-react:
     devDependencies:
       '@causewayjs/client':
-        specifier: workspace:*
+        specifier: workspace:1.0.0-alpha.0
         version: link:../causeway-client
       '@testing-library/react':
         specifier: 16.3.2

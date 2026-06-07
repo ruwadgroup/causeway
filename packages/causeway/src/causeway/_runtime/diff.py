@@ -132,7 +132,6 @@ def _diff_params(
 
     for n in new_by_name.keys() - old_by_name.keys():
         p = new_by_name[n]
-        # Newly required → breaking; new optional → info.
         if p.get("required"):
             out.add(
                 "breaking",
