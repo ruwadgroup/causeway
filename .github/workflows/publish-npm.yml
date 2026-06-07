@@ -62,7 +62,12 @@ jobs:
           if npm view "$NAME@$VERSION" version >/dev/null 2>&1; then
             echo "$NAME@$VERSION already published; skipping."
           else
-            pnpm publish --provenance --access public --no-git-checks
+            TAG=latest
+            if [[ "$VERSION" == *-* ]]; then
+              TAG="${VERSION#*-}"
+              TAG="${TAG%%.*}"
+            fi
+            pnpm publish --provenance --access public --tag "$TAG" --no-git-checks
           fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
