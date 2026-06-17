@@ -7,6 +7,17 @@ from [Conventional Commits](https://www.conventionalcommits.org/).
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0](https://github.com/ruwadgroup/causeway/compare/causeway-v1.0.0...causeway-v2.0.0) (2026-06-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* removes the `causeway swift`/`causeway kotlin` CLI commands; the Searchable/PubSub/SessionStore/LogSink contracts and their default adapters; and the growthbook/smtp/sentry/modal/fly extras.
+
+### Refactor
+
+* trim maintenance surface to React/TS focus ([#43](https://github.com/ruwadgroup/causeway/issues/43)) ([9c1781e](https://github.com/ruwadgroup/causeway/commit/9c1781ef61ebda25b776b698c9fe641da029a787))
+
 ## [0.6.3](https://github.com/ruwadgroup/causeway/compare/causeway-v0.6.2...causeway-v0.6.3) (2026-05-31)
 
 
