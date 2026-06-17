@@ -50,7 +50,7 @@ The longer design story is [Why Causeway](./why-causeway.md).
 | Add auth, idempotency, or tenancy | [Permissions](./backend/permissions.md), [idempotency keys](./backend/idempotency.md), [multi-tenancy](./backend/multi-tenant.md) |
 | Add tasks, events, or webhooks    | [Background tasks](./app/tasks.md), [events](./app/events.md), [webhooks](./app/webhooks.md)                                      |
 | Test routes                       | [Testing](./app/testing.md), [inline scenarios](./app/inline-scenarios.md)                                                        |
-| Deploy                            | [Deploying overview](./deploy/index.md), [Docker](./deploy/docker.md), [Fly.io](./deploy/fly.md), [Modal](./deploy/modal.md)      |
+| Deploy                            | [Deploying overview](./deploy/index.md), [Docker](./deploy/docker.md)                                                             |
 
 ## Core Concepts
 

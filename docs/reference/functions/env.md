@@ -27,7 +27,7 @@ env() -> str
 from causeway import register, env
 
 if env() == "prod":
-    register(SentryObserver(dsn=...))
+    register(S3Storage(bucket=...))
 ```
 
 > **Good to know.** Causeway doesn't validate the value — anything in the env var goes. If you want to constrain it (`dev` / `staging` / `prod`), add a `field_validator` to your `Settings` class.

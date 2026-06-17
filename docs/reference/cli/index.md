@@ -15,8 +15,6 @@ Commands:
   inspect                    Inspect the App Graph.
   freeze                     Emit the AOT build tree.
   openapi                    Emit OpenAPI 3.1 JSON.
-  swift                      Emit a Swift client.
-  kotlin                     Emit a Kotlin client.
   plugins                    List registered plugin adapters.
   plugin new <name>          Scaffold a new plugin package.
   diff <a> <b>               Compare two IR snapshots.
@@ -36,8 +34,6 @@ Commands:
 | `causeway inspect`           | [`inspect`](./inspect.md)       |
 | `causeway freeze`            | [`freeze`](./freeze.md)         |
 | `causeway openapi`           | [`openapi`](./openapi.md)       |
-| `causeway swift`             | [`swift`](./swift.md)           |
-| `causeway kotlin`            | [`kotlin`](./kotlin.md)         |
 | `causeway plugins`           | [`plugins`](./plugins.md)       |
 | `causeway plugin new <name>` | [`plugin new`](./plugin-new.md) |
 | `causeway diff <a> <b>`      | [`diff`](./diff.md)             |

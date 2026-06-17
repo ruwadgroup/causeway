@@ -65,9 +65,8 @@ phases — is your framework's call.
 
 The IR is the contract. `causeway._runtime.ir.AppIR` is a pure
 data structure. Walk it however you want. The shipping renderers
-(`causeway._runtime.codegen` for TypeScript,
-`causeway._runtime.polyglot` for Swift / Kotlin, and
-`causeway._runtime.openapi` for OpenAPI 3.1) are all built on the same
+(`causeway._runtime.codegen` for TypeScript and
+`causeway._runtime.openapi` for OpenAPI 3.1) are both built on the same
 public IR — your renderer joins the same line.
 
 ## The substrate's public surface

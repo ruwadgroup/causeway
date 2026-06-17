@@ -4,8 +4,6 @@ Invoke the relevant `DeployTarget` plugin.
 
 ```bash
 causeway deploy docker
-causeway deploy fly
-causeway deploy modal
 ```
 
 ## Synopsis
@@ -26,8 +24,6 @@ causeway deploy <target> [--output <dir>]
 The CLI scans registered plugins for one whose class name matches `<target>Deploy` (case-insensitive). For example:
 
 - `causeway deploy docker` → looks for a `DockerDeploy` adapter.
-- `causeway deploy fly` → looks for a `FlyDeploy` adapter.
-- `causeway deploy modal` → looks for a `ModalDeploy` adapter.
 
 If no adapter matches, the command fails with:
 

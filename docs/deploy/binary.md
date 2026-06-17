@@ -168,7 +168,6 @@ distroless attack surface gets you ahead of the typical
   `--assume-yes-for-downloads` (already in the default command).
 - **Cross-compilation isn't supported.** Build on the same OS/arch you
   ship to. Use a matrix in CI.
-- **Plugins that do runtime importlib magic** (rare, but
-  `causeway[growthbook]` does some) may need explicit
+- **Plugins that do runtime importlib magic** (rare) may need explicit
   `--include-package` hints. Pass them via the `extra_packages` argument
   to `build_binary()` or open an issue with the plugin.

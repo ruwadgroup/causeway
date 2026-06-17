@@ -102,7 +102,7 @@ def env() -> str:
     Plugins gate themselves on this for per-env activation::
 
         if env() == "prod":
-            register(SentryObserver(dsn=...))
+            register(S3Storage(bucket=...))
     """
     return os.environ.get("CAUSEWAY_ENV") or os.environ.get("ENV") or "dev"
 

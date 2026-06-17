@@ -48,7 +48,6 @@ For request-scoped values that depend on settings (a DB pool, a Stripe client), 
 ```python
 class Settings(BaseSettings):
     env: str = "dev"
-    sentry_dsn: SecretStr | None = None
     s3_bucket: str = "uploads-local"
 
     @property
@@ -62,7 +61,6 @@ Per-env activation in `plugins.py`:
 from causeway import register, env
 
 if env() == "prod":
-    register(SentryObserver(dsn=settings.sentry_dsn.get_secret_value()))
     register(S3Storage(bucket=settings.s3_bucket))
 else:
     register(LocalStorage(path="./tmp/uploads"))

@@ -75,8 +75,6 @@ Every public symbol Causeway exports, on its own page. Organized by kind: decora
 | [`causeway inspect`](./cli/inspect.md)              | Inspect the App Graph.                                   |
 | [`causeway freeze`](./cli/freeze.md)                | Emit the AOT build tree without compiling.               |
 | [`causeway openapi`](./cli/openapi.md)              | Emit OpenAPI 3.1 JSON for non-Causeway consumers.        |
-| [`causeway swift`](./cli/swift.md)                  | Emit a Swift client from the route IR.                   |
-| [`causeway kotlin`](./cli/kotlin.md)                | Emit a Kotlin client from the route IR.                  |
 | [`causeway plugins`](./cli/plugins.md)              | List registered plugin adapters.                         |
 | [`causeway plugin new <name>`](./cli/plugin-new.md) | Scaffold a new plugin package.                           |
 | [`causeway diff <a> <b>`](./cli/diff.md)            | Compare two IR snapshots and flag breaking changes.      |
