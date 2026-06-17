@@ -9,7 +9,7 @@ version and warns on mismatch.
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import AsyncIterator
 from contextlib import AbstractAsyncContextManager
 from datetime import datetime
 from typing import Any, ClassVar, Protocol, runtime_checkable
@@ -139,30 +139,12 @@ class KV(Plugin, Protocol):
 
 
 @runtime_checkable
-class SessionStore(Plugin, Protocol):
-    contract_version: ClassVar[str] = "v1.0"
-
-    async def read(self, session_id: str) -> dict[str, Any] | None: ...
-    async def write(self, session_id: str, data: dict[str, Any]) -> None: ...
-    async def destroy(self, session_id: str) -> None: ...
-    async def rotate(self, session_id: str) -> str: ...
-
-
-@runtime_checkable
 class Mailer(Plugin, Protocol):
     contract_version: ClassVar[str] = "v1.0"
 
     async def send(self, to: str, subject: str, body: str) -> None: ...
     async def send_template(self, to: str, template: str, data: dict[str, Any]) -> None: ...
     async def verify_address(self, address: str) -> bool: ...
-
-
-@runtime_checkable
-class PubSub(Plugin, Protocol):
-    contract_version: ClassVar[str] = "v1.0"
-
-    async def publish(self, topic: str, payload: bytes) -> None: ...
-    async def subscribe(self, topic: str, handler: Callable[[bytes], Awaitable[None]]) -> None: ...
 
 
 @runtime_checkable
@@ -191,23 +173,6 @@ class MetricsSink(Plugin, Protocol):
     def gauge(self, name: str, value: float, **tags: str) -> None: ...
     def histogram(self, name: str, value: float, **tags: str) -> None: ...
     def timer(self, name: str, **tags: str) -> AsyncContextManager[None]: ...
-
-
-@runtime_checkable
-class LogSink(Plugin, Protocol):
-    contract_version: ClassVar[str] = "v1.0"
-
-    def emit(self, record: dict[str, Any]) -> None: ...
-
-
-@runtime_checkable
-class Searchable(Plugin, Protocol):
-    contract_version: ClassVar[str] = "v1.0"
-
-    async def index(self, doc_id: str, doc: dict[str, Any]) -> None: ...
-    async def search(self, query: str, *, limit: int = 20) -> list[dict[str, Any]]: ...
-    async def delete(self, doc_id: str) -> None: ...
-    async def bulk_index(self, docs: list[tuple[str, dict[str, Any]]]) -> None: ...
 
 
 @runtime_checkable
@@ -318,14 +283,10 @@ __all__ = [
     "DBSession",
     "DeployTarget",
     "FeatureFlags",
-    "LogSink",
     "Mailer",
     "MetricsSink",
     "Plugin",
-    "PubSub",
     "RateLimiter",
-    "Searchable",
-    "SessionStore",
     "Storage",
     "TaskAdapter",
     "TaskRef",

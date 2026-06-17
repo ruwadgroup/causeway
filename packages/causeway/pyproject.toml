@@ -56,11 +56,6 @@ sqlmodel = [
   "sqlmodel>=0.0.22",
 ]
 docker = []
-fly = []
-modal = ["modal>=0.65"]
-growthbook = ["growthbook>=1.0", "httpx>=0.28"]
-smtp = ["aiosmtplib>=3.0"]
-sentry = ["sentry-sdk>=2.0"]
 fs = []
 s3 = ["aioboto3>=13.0"]
 dramatiq = ["dramatiq[redis]>=2.1.0", "periodiq>=0.14.0"]
@@ -72,7 +67,7 @@ otel = [
 ]
 binary = ["nuitka>=2.5"]
 all = [
-  "causeway[jwt,redis,sqlmodel,docker,fly,modal,growthbook,smtp,sentry,fs,s3,dramatiq,otel,binary]",
+  "causeway[jwt,redis,sqlmodel,docker,fs,s3,dramatiq,otel,binary]",
 ]
 
 [project.scripts]

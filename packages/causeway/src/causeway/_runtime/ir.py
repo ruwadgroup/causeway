@@ -1,9 +1,8 @@
 """IR builder.
 
 Every registered handler reduces to a JSON-Schema-2020-12 IR that the
-codegen walks to emit TypeScript. The two-step (IR → renderer) split is
-what lets polyglot clients (Swift, Kotlin) follow later without rewriting
-type extraction.
+codegen walks to emit TypeScript. The two-step (IR → renderer) split keeps
+type extraction independent of the renderer.
 
 Two passes:
 

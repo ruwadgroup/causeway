@@ -2,11 +2,9 @@
 
 A Causeway app is **an ASGI app + a manifest**. It runs anywhere ASGI runs — Docker, Fly, Modal, Lambda (via Mangum), bare uvicorn behind nginx, your own Kubernetes cluster.
 
-The framework doesn't own deploys. Three official adapters wrap the common targets so you don't have to write Dockerfiles by hand:
+The framework doesn't own deploys. The official adapter wraps the common case so you don't have to write Dockerfiles by hand:
 
 - **[Docker](./docker.md)** — `causeway[docker]`. Builds an image from your project.
-- **[Fly.io](./fly.md)** — `causeway[fly]`. Wraps `flyctl` deploy.
-- **[Modal](./modal.md)** — `causeway[modal]`. Wraps the Modal SDK for ephemeral function-as-a-service.
 - **[Binary export](./binary.md)** — `causeway build --binary`. Single AOT-compiled executable for self-hosting; pairs with `FROM scratch` containers.
 
 Every deploy adapter implements the [`DeployTarget`](../reference/classes/contracts.md#deploytarget) contract — `manifest()`, `package()`, `push(target)`.
@@ -20,7 +18,7 @@ causeway build                            # emit dist/ir.json + client/ + wheel
 causeway deploy <target>                  # plugin reads dist/ and pushes
 ```
 
-The adapter produces the target-specific artifact (Dockerfile + image, Fly machine spec, Modal stub) from the project shape. You don't write target-specific glue.
+The adapter produces the target-specific artifact (Dockerfile + image) from the project shape. You don't write target-specific glue.
 
 ## What gets deployed
 
@@ -47,7 +45,7 @@ Run with:
 uvicorn app:app --host 0.0.0.0 --port 8000
 ```
 
-You're done. Causeway emits an ASGI app — it's not Docker-aware, Fly-aware, or Modal-aware in any way.
+You're done. Causeway emits an ASGI app — it's not Docker-aware in any way.
 
 ## Health checks
 
@@ -69,5 +67,3 @@ You're done. Causeway emits an ASGI app — it's not Docker-aware, Fly-aware, or
 ## Per-target guides
 
 - **[Docker](./docker.md)**
-- **[Fly.io](./fly.md)**
-- **[Modal](./modal.md)**

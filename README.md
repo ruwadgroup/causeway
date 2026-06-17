@@ -177,7 +177,7 @@ Details in [`docs/stability/`](./docs/stability) — semver, IR stability, LTS.
 
 The official adapter set lives inside [`causeway.contrib`](./packages/causeway/src/causeway/contrib) and installs through extras like `causeway[dramatiq]`, `causeway[s3]`, `causeway[jwt]`, and `causeway[sqlmodel]`. Full inventory and roadmap in [`ROADMAP.md`](./ROADMAP.md#plugin-ecosystem).
 
-> The React story is what I use day to day, so React and Next.js are the bindings I maintain. Solid, Svelte, or anything else can ride on the same `@causewayjs/ts` runtime — if you build one, I'd love to point people at it.
+> React and Next.js are the bindings I maintain. Any other framework can ride on the same `@causewayjs/ts` runtime — if you build a binding for one, I'd love to point people at it.
 
 ## Contributing
 

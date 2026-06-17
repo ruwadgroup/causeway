@@ -83,9 +83,9 @@ Builds the App Graph from the runtime app: routes, route keys, HTTP paths, sourc
 
 ## Plugins
 
-### `contracts.py` — 363 lines
+### `contracts.py` — 296 lines
 
-Every official contract as a `typing.Protocol`. `Plugin`, `TaskAdapter`, `EventBus`, `Storage`, `KV`, `Mailer`, `AuthProvider`, `DBSession`, `BlobScanner`, `FeatureFlags`, `MetricsSink`, `LogSink`, `PubSub`, `RateLimiter`, `SessionStore`, `DeployTarget`. Each contract declares `contract_version: ClassVar[str] = "v1.0"`.
+Every official contract as a `typing.Protocol`. `Plugin`, `TaskAdapter`, `EventBus`, `Storage`, `KV`, `Mailer`, `AuthProvider`, `DBSession`, `BlobScanner`, `FeatureFlags`, `MetricsSink`, `RateLimiter`, `DeployTarget`. Each contract declares `contract_version: ClassVar[str] = "v1.0"`.
 
 If you're adding a new official contract, **start here**. Then add a reference
 adapter in `adapters.py` or an optional adapter under `contrib/`, plus a test
@@ -100,9 +100,9 @@ The registry. Two discovery paths feed one ordered dict:
 
 Lifecycle: `startup_all(settings)` fires every plugin's `startup` in registration order; `shutdown_all()` fires `shutdown` in reverse. `check_required_contracts()` walks `requires` lists and refuses to boot if a dependency is missing. `merge_settings_fragments(settings)` applies each plugin's optional `settings_fragment()` to the `Settings` instance.
 
-### `adapters.py` — 305 lines
+### `adapters.py` — 190 lines
 
-Reference adapters shipped in core: `MemoryKV`, `LocalStorage`, `MemoryLimiter`, `StaticFlags`, `NullSink`, `MemoryBus`, `NullScanner`. These exist so the framework boots out of the box; production users swap them via a sibling `causeway-*` package.
+Reference adapters shipped in core: `MemoryKV`, `LocalStorage`, `MemoryLimiter`, `StaticFlags`, `NullSink`, `NullScanner`. These exist so the framework boots out of the box; production users swap them via a sibling `causeway-*` package.
 
 ---
 
@@ -186,9 +186,9 @@ The inline-scenario runtime. Lives in a private subpackage so the implementation
 
 Registered via the `pytest11` entry point. Adds `--causeway-routes`, `--update-snapshots`, `--causeway-no-inline`; matches route files via `pytest_collect_file`; yields one `ScenarioItem` per `scenario(...)` block; applies snapshot rewrites in `pytest_sessionfinish`.
 
-### `cli.py` — 543 lines
+### `cli.py` — 501 lines
 
-The `causeway` CLI built on Typer. Commands: `new` (scaffold via `_scaffold.py`), `dev` (owned uvicorn server + smart route hot-swap), `build` (codegen + wheel), `codegen`, `ir`, `inspect` (App Graph), `freeze`, auxiliary generators (`openapi`, `swift`, `kotlin`), `plugins` (list registered adapters), `diff` (IR breaking-change detection), `deploy <target>` (dispatch to a registered `DeployTarget`), and `plugin new <name>` (scaffold a new plugin package).
+The `causeway` CLI built on Typer. Commands: `new` (scaffold via `_scaffold.py`), `dev` (owned uvicorn server + smart route hot-swap), `build` (codegen + wheel), `codegen`, `ir`, `inspect` (App Graph), `freeze`, `openapi` (auxiliary generator), `plugins` (list registered adapters), `diff` (IR breaking-change detection), `deploy <target>` (dispatch to a registered `DeployTarget`), and `plugin new <name>` (scaffold a new plugin package).
 
 ### `_scaffold.py` — 290 lines
 

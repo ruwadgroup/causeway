@@ -66,13 +66,11 @@ def plugin(settings):
 from causeway import register, env
 from causeway.contrib.dramatiq import DramatiqAdapter
 from causeway.contrib.s3 import S3Storage
-from causeway.contrib.sentry import SentryObserver
 from app.config import settings
 
 
 if env() == "prod":
-    register(SentryObserver(dsn=settings.sentry_dsn.get_secret_value()))   # first → wraps everything
-    register(DramatiqAdapter(broker_url=settings.redis_url.get_secret_value()))
+    register(DramatiqAdapter(broker_url=settings.redis_url.get_secret_value()))   # first → others can depend on it
     register(S3Storage(bucket="uploads"))
 ```
 
@@ -89,14 +87,10 @@ swap.
 | `TaskAdapter`  | `enqueue`, `schedule`, `cron`, `eager`, `status`, `result` | `causeway.tasks.InMemoryAdapter`  |
 | `Storage`      | `put`, `get`, `delete`, `signed_url`, `list`               | `causeway.adapters.LocalStorage`  |
 | `KV`           | `get`, `set` (TTL), `delete`, `incr`, `expire`             | `causeway.adapters.MemoryKV`      |
-| `SessionStore` | `read`, `write`, `destroy`, `rotate`                       | `causeway.adapters.CookieStore`   |
 | `Mailer`       | `send`, `send_template`, `verify_address`                  | bring your own                    |
-| `Searchable`   | `index`, `search`, `delete`, `bulk_index`                  | bring your own                    |
 | `RateLimiter`  | `acquire`, `peek`, `reset`                                 | `causeway.adapters.MemoryLimiter` |
 | `FeatureFlags` | `is_on`, `variant`, `refresh`                              | `causeway.adapters.StaticFlags`   |
 | `MetricsSink`  | `counter`, `gauge`, `histogram`, `timer`                   | none                              |
-| `LogSink`      | `emit(record)`                                             | stdout via `structlog`            |
-| `PubSub`       | `publish`, `subscribe`                                     | none                              |
 | `AuthProvider` | `current_user`, `login`, `logout`, `verify`                | bring your own                    |
 | `DBSession`    | `session`, `transaction`, `health`                         | provided by ORM adapters          |
 | `BlobScanner`  | `scan(stream)` — virus / type checks                       | none                              |
@@ -150,7 +144,6 @@ from causeway import register, env
 from app.config import settings
 
 if env() == "prod":
-    register(SentryObserver(dsn=settings.sentry_dsn.get_secret_value()))
     register(S3Storage(bucket=settings.s3_bucket))
 else:
     register(LocalStorage(path="./tmp/uploads"))
@@ -169,7 +162,7 @@ $ causeway plugins
 │ DramatiqAdapter  │ v1.0              │ causeway.contrib.dramatiq  │
 │ S3Storage        │ v1.0              │ causeway.contrib.s3      │
 │ RedisCache       │ v1.0              │ causeway.contrib.redis     │
-│ SmtpMailer       │ v1.0              │ causeway.contrib.smtp     │
+│ JwtAuth          │ v1.0              │ causeway.contrib.jwt      │
 └──────────────────┴───────────────────┴──────────────────────┘
 ```
 
@@ -183,11 +176,8 @@ Official adapters use short extras and matching `causeway.contrib` modules:
 - **storage**: `causeway[fs]`, `causeway[s3]` -> `causeway.contrib.fs`, `causeway.contrib.s3`
 - **cache**: `causeway[redis]` -> `causeway.contrib.redis`
 - **auth**: `causeway[jwt]` -> `causeway.contrib.jwt`
-- **mailer**: `causeway[smtp]` -> `causeway.contrib.smtp`
-- **observe**: `causeway[sentry]` -> `causeway.contrib.sentry`
-- **flags**: `causeway[growthbook]` -> `causeway.contrib.growthbook`
 - **db**: `causeway[sqlmodel]` -> `causeway.contrib.sqlmodel`
-- **deploy**: `causeway[docker]`, `causeway[fly]`, `causeway[modal]` -> `causeway.contrib.docker`, `causeway.contrib.fly`, `causeway.contrib.modal`
+- **deploy**: `causeway[docker]` -> `causeway.contrib.docker`
 
 Third-party plugins should use `causeway-contrib-<thing>` to avoid implying official status.
 

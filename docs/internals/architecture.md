@@ -85,9 +85,8 @@ Two discovery paths:
   credentials).
 
 A plugin implements one or more **contracts**: `TaskAdapter`,
-`Storage`, `KV`, `SessionStore`, `Mailer`, `Searchable`, `RateLimiter`,
-`FeatureFlags`, `MetricsSink`, `LogSink`, `PubSub`, `AuthProvider`,
-`DBSession`, … Each contract ships with a reference adapter in core (or
+`Storage`, `KV`, `Mailer`, `RateLimiter`, `FeatureFlags`, `MetricsSink`,
+`AuthProvider`, `DBSession`, … Each contract ships with a reference adapter in core (or
 in a sibling repo for plugins that need a real dependency). Picking a
 real backend is a one-line swap. Full mechanics in
 [`plugins.md`](../app/plugins.md).

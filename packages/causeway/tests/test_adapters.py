@@ -2,20 +2,15 @@
 
 from __future__ import annotations
 
-import asyncio
-
 import pytest
 
 from causeway.adapters import (
-    CookieStore,
     LocalStorage,
-    MemoryBus,
     MemoryKV,
     MemoryLimiter,
     NullScanner,
     NullSink,
     StaticFlags,
-    StdoutLogSink,
 )
 
 # ---------------------------------------------------------------------------
@@ -83,20 +78,6 @@ async def test_kv_ttl_expires(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Sessions
-# ---------------------------------------------------------------------------
-
-
-async def test_cookie_store_rotate_moves_data() -> None:
-    s = CookieStore()
-    await s.write("old", {"user": "ada"})
-    new = await s.rotate("old")
-    assert new != "old"
-    assert await s.read("old") is None
-    assert await s.read(new) == {"user": "ada"}
-
-
-# ---------------------------------------------------------------------------
 # Rate limiter
 # ---------------------------------------------------------------------------
 
@@ -134,7 +115,7 @@ async def test_static_flags_seeded_from_settings() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Metrics + logs (no observable side effects, just smoke)
+# Metrics (no observable side effects, just smoke)
 # ---------------------------------------------------------------------------
 
 
@@ -145,35 +126,6 @@ async def test_null_sink_swallows() -> None:
     s.histogram("latency_ms", 1.2)
     async with s.timer("op"):
         pass
-
-
-def test_stdout_log_sink_emits() -> None:
-    StdoutLogSink().emit({"event": "started"})
-
-
-# ---------------------------------------------------------------------------
-# Pub/sub
-# ---------------------------------------------------------------------------
-
-
-async def test_pubsub_fans_out_to_every_subscriber() -> None:
-    bus = MemoryBus()
-    a_seen: list[bytes] = []
-    b_seen: list[bytes] = []
-
-    async def a(payload: bytes) -> None:
-        a_seen.append(payload)
-
-    async def b(payload: bytes) -> None:
-        b_seen.append(payload)
-
-    await bus.subscribe("evt", a)
-    await bus.subscribe("evt", b)
-    await bus.publish("evt", b"hi")
-    # Yield once for tasks fan-out to complete.
-    await asyncio.sleep(0)
-    assert a_seen == [b"hi"]
-    assert b_seen == [b"hi"]
 
 
 # ---------------------------------------------------------------------------

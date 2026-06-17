@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-import asyncio
 import contextlib
-import logging
 import time
-from collections import defaultdict
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import AsyncIterator
 from typing import Any, ClassVar
 
 
@@ -96,34 +93,6 @@ class MemoryKV(_Ready):
             self._exp[key] = time.monotonic() + ttl
 
 
-class CookieStore(_Ready):
-    """In-memory session store keyed by session id."""
-
-    def __init__(self) -> None:
-        self._sessions: dict[str, dict[str, Any]] = {}
-
-    async def shutdown(self) -> None:
-        self._sessions.clear()
-
-    async def read(self, session_id: str) -> dict[str, Any] | None:
-        return self._sessions.get(session_id)
-
-    async def write(self, session_id: str, data: dict[str, Any]) -> None:
-        self._sessions[session_id] = dict(data)
-
-    async def destroy(self, session_id: str) -> None:
-        self._sessions.pop(session_id, None)
-
-    async def rotate(self, session_id: str) -> str:
-        import secrets
-
-        new_id = secrets.token_urlsafe(32)
-        data = self._sessions.pop(session_id, None)
-        if data is not None:
-            self._sessions[new_id] = data
-        return new_id
-
-
 class MemoryLimiter(_Ready):
     """Token-bucket limiter."""
 
@@ -200,36 +169,6 @@ class NullSink(_Ready):
         yield
 
 
-class StdoutLogSink(_Ready):
-    """Forwards structured records to logging."""
-
-    def __init__(self) -> None:
-        self._log = logging.getLogger("causeway.app")
-
-    async def shutdown(self) -> None: ...
-
-    def emit(self, record: dict[str, Any]) -> None:
-        self._log.info("%s", record)
-
-
-class MemoryBus(_Ready):
-    """In-process pub/sub."""
-
-    def __init__(self) -> None:
-        self._subs: dict[str, list[Callable[[bytes], Awaitable[None]]]] = defaultdict(list)
-
-    async def shutdown(self) -> None:
-        self._subs.clear()
-
-    async def publish(self, topic: str, payload: bytes) -> None:
-        handlers = list(self._subs.get(topic, ()))
-        if handlers:
-            await asyncio.gather(*(h(payload) for h in handlers), return_exceptions=True)
-
-    async def subscribe(self, topic: str, handler: Callable[[bytes], Awaitable[None]]) -> None:
-        self._subs[topic].append(handler)
-
-
 class NullScanner(_Ready):
     """No-op blob scanner."""
 
@@ -242,13 +181,10 @@ class NullScanner(_Ready):
 
 
 __all__ = [
-    "CookieStore",
     "LocalStorage",
-    "MemoryBus",
     "MemoryKV",
     "MemoryLimiter",
     "NullScanner",
     "NullSink",
     "StaticFlags",
-    "StdoutLogSink",
 ]

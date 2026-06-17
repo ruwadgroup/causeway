@@ -14,8 +14,7 @@
     "url": "git+https://github.com/ruwadgroup/causeway.git"
   },
   "workspaces": [
-    "packages/*",
-    "examples/*/frontend"
+    "packages/*"
   ],
   "scripts": {
     "build": "pnpm -r --filter=./packages/causeway-* run build",

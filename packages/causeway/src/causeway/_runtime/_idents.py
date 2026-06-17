@@ -1,4 +1,4 @@
-"""Identifier transforms shared between codegen and polyglot renderers."""
+"""Identifier transforms used by the codegen renderer."""
 
 from __future__ import annotations
 

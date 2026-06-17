@@ -96,7 +96,7 @@ Disable in production via `create_app(..., diagnostics=False)`.
 ## What Causeway doesn't do
 
 - **Metrics export.** Use the `MetricsSink` contract with a plugin (`causeway-metrics-statsd`, `causeway-metrics-prometheus`).
-- **Log shipping.** The `LogSink` contract or just point your container runtime at stdout.
+- **Log shipping.** Point your container runtime at stdout.
 - **APM dashboards.** SigNoz, Honeycomb, Datadog, Tempo — pick one, point OTel at it.
 
 The framework wires correlation. The transport and storage are the user's choice.
@@ -119,17 +119,6 @@ async def time_request(req):
 ```
 
 For app-wide timing, install a class `Middleware` at the root.
-
-**Sentry:**
-
-```python
-# src/app/plugins.py
-from causeway.contrib.sentry import SentryObserver
-from causeway import register, env
-
-if env() == "prod":
-    register(SentryObserver(dsn=settings.sentry_dsn.get_secret_value()))
-```
 
 **OTel with auto-instrumentation:**
 

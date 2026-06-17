@@ -77,7 +77,7 @@ Each change is classified per [IR stability](../stability/ir-stability.md):
 
 ## Why an IR layer at all
 
-So one source of truth feeds more than one tool. Today the primary generator is the TypeScript route-key client. The same IR also feeds compatibility/export surfaces such as OpenAPI 3.1, Swift, and Kotlin. Each generator consumes the same contract instead of re-parsing Python.
+So one source of truth feeds more than one tool. Today the primary generator is the TypeScript route-key client. The same IR also feeds compatibility/export surfaces such as OpenAPI 3.1. Each generator consumes the same contract instead of re-parsing Python.
 
 It also makes contract-stability tooling tractable. `causeway diff` walks the IR rather than parsing Python — that's the only way you get fast, reliable breaking-change detection in CI.
 

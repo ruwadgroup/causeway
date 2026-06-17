@@ -41,7 +41,6 @@ function calls `register()` for you — see [Plugin authoring](../../app/plugin-
 from causeway import register, env
 
 if env() == "prod":
-    register(SentryObserver(dsn=...))
     register(S3Storage(bucket="..."))
 else:
     register(LocalStorage(path="./tmp/uploads"))
