@@ -1,3 +1,8 @@
+> [!WARNING]
+> **This project is archived and no longer maintained.**
+> Causeway was an experimental project. It has been archived because of the low value it brought to the table.
+> The code remains available for reference, but there will be no further development, releases, or support.
+
 <div align="center">
 
 # Causeway
